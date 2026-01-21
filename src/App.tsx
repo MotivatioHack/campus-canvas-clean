@@ -5,9 +5,11 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "./context/ThemeContext";
 import ProtectedRoute from "./components/ProtectedRoute";
-import ScrollToTop from "./components/ScrollToTop"; // Added the Fix Import
+import ScrollToTop from "./components/ScrollToTop";
 
-// Pages
+/* =======================
+   Public Pages
+======================= */
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -26,27 +28,35 @@ import LatestNews from "./pages/LatestNews";
 import Holidays from "./pages/Holidays";
 import NotFound from "./pages/NotFound";
 
-// Simple Placeholder Dashboard Components
-const StudentDashboard = () => <div className="p-8 text-2xl">Student Dashboard – Placeholder</div>;
-const FacultyDashboard = () => <div className="p-8 text-2xl">Faculty Dashboard – Placeholder</div>;
-const AdminDashboard = () => <div className="p-8 text-2xl">Admin Dashboard – Placeholder</div>;
+/* =======================
+   Student Dashboard Pages
+   (MERGED – NO SEPARATE FOLDER)
+======================= */
+import Dashboard from "./pages/student/Dashboard";
+import RaiseComplaint from "./pages/student/RaiseComplaint";
+import Chatbot from "./pages/Chatbot";
 
+/* =======================
+   Query Client
+======================= */
 const queryClient = new QueryClient();
 
+/* =======================
+   App Root
+======================= */
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <ThemeProvider>
         <Toaster />
         <Sonner />
+
         <BrowserRouter>
-          {/* MANDATORY FIX: This component resets scroll to top on every route change.
-              Place it inside BrowserRouter but outside of Routes. 
-          */}
+          {/* 🔧 Scroll position reset on every route change */}
           <ScrollToTop />
-          
+
           <Routes>
-            {/* Public Routes */}
+            {/* ---------- Public Routes ---------- */}
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
@@ -66,33 +76,35 @@ const App = () => (
             <Route path="/latest-news" element={<LatestNews />} />
             <Route path="/holidays" element={<Holidays />} />
 
-            {/* Protected Role-Based Routes */}
-            <Route 
-              path="/dashboard/student" 
+            {/* ---------- Student Protected Routes ---------- */}
+            <Route
+              path="/dashboard/student"
               element={
                 <ProtectedRoute allowedRole="student">
-                  <StudentDashboard />
+                  <Dashboard />
                 </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/dashboard/faculty" 
-              element={
-                <ProtectedRoute allowedRole="faculty">
-                  <FacultyDashboard />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/dashboard/admin" 
-              element={
-                <ProtectedRoute allowedRole="admin">
-                  <AdminDashboard />
-                </ProtectedRoute>
-              } 
+              }
             />
 
-            {/* 404 Route */}
+            <Route
+              path="/dashboard/student/raise-complaint"
+              element={
+                <ProtectedRoute allowedRole="student">
+                  <RaiseComplaint />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/dashboard/chatbot"
+              element={
+                <ProtectedRoute allowedRole="student">
+                  <Chatbot />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* ---------- 404 ---------- */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
