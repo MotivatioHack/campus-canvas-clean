@@ -19,17 +19,17 @@ import {
 import { useTheme } from "@/context/ThemeContext";
 
 const menuItems = [
-  { icon: LayoutDashboard, label: "Dashboard", path: "/" },
-  { icon: MessageSquarePlus, label: "Raise Complaint", path: "/raise-complaint" },
-  { icon: FileText, label: "My Complaints", path: "/my-complaints" },
-  { icon: HelpCircle, label: "Student Helpdesk", path: "/helpdesk" },
-  { icon: Search, label: "Lost & Found", path: "/lost-found" },
-  { icon: Calendar, label: "Events", path: "/events" },
-  { icon: Users, label: "Student Clubs", path: "/clubs" },
-  { icon: Vote, label: "Polling", path: "/polling" },
-  { icon: Briefcase, label: "Placements", path: "/placements" },
-  { icon: Bell, label: "Notices", path: "/notices" },
-  { icon: Bot, label: "Chatbot", path: "/chatbot" },
+  { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard/student" },
+  { icon: MessageSquarePlus, label: "Raise Complaint", path: "/dashboard/student/raise-complaint" },
+  { icon: FileText, label: "My Complaints", path: "/dashboard/student/my-complaints" },
+  { icon: HelpCircle, label: "Student Helpdesk", path: "/dashboard/student/helpdesk" },
+  { icon: Search, label: "Lost & Found", path: "/dashboard/student/lost-found" },
+  { icon: Calendar, label: "Events", path: "/dashboard/student/events" },
+  { icon: Users, label: "Student Clubs", path: "/dashboard/student/clubs" },
+  { icon: Vote, label: "Polling", path: "/dashboard/student/polling" },
+  { icon: Briefcase, label: "Placements", path: "/dashboard/student/placements" },
+  { icon: Bell, label: "Notices", path: "/dashboard/student/notices" },
+  { icon: Bot, label: "Chatbot", path: "/dashboard/student/chatbot" },
 ];
 
 const Sidebar = () => {
@@ -125,16 +125,16 @@ const Sidebar = () => {
       {/* Profile & Logout */}
       <div className="p-4 border-t border-white/10">
         <Link
-          to="/profile"
+          to="/dashboard/student/profile"
           className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-white/90 hover:bg-white/10 transition-all duration-200 mb-2 ${
-            location.pathname === "/profile" 
+            location.pathname === "/dashboard/student/profile" 
               ? theme === "fancy"
                 ? "bg-gradient-to-r from-[#4f6fdc] to-[#9333ea] shadow-lg"
                 : "bg-white text-[#4f6fdc]"
               : ""
           }`}
         >
-          <User className={`w-5 h-5 ${location.pathname === "/profile" && theme !== "fancy" ? "text-[#4f6fdc]" : ""}`} />
+          <User className={`w-5 h-5 ${location.pathname === "/dashboard/student/profile" && theme !== "fancy" ? "text-[#4f6fdc]" : ""}`} />
           <span className="text-sm">Profile</span>
         </Link>
         <button 

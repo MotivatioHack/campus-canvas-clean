@@ -36,6 +36,13 @@ import RaiseComplaint from "./pages/student/RaiseComplaint";
 import MyComplaints from "./pages/student/MyComplaints";
 import StudentHelpdesk from "./pages/student/StudentHelpdesk";
 import Chatbot from "./pages/Chatbot";
+import LostAndFound from "./pages/student/LostAndFound";
+import Events from "./pages/student/Events";
+import StudentClubs from "./pages/student/StudentClubs";
+import Polling from "./pages/student/Polling";
+import Placements from "./pages/student/Placements";
+import Notices from "./pages/student/Notices";
+import StudentProfile from "./pages/student/StudentProfile";
 
 /* =======================
    Query Client
@@ -109,6 +116,69 @@ const App = () => (
               element={
                 <ProtectedRoute allowedRole="student">
                   <Chatbot />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/dashboard/student/lost-found"
+              element={
+                <ProtectedRoute allowedRole="student">
+                  <LostAndFound />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/dashboard/student/events"
+              element={
+                <ProtectedRoute allowedRole="student">
+                  <Events />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/dashboard/student/clubs"
+              element={
+                <ProtectedRoute allowedRole="student">
+                  <StudentClubs />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/dashboard/student/polling"
+              element={
+                <ProtectedRoute allowedRole="student">
+                  <Polling />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/dashboard/student/placements"
+              element={
+                <ProtectedRoute allowedRole="student">
+                  <Placements />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/dashboard/student/notices"
+              element={
+                <ProtectedRoute allowedRole="student">
+                  <Notices />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/dashboard/student/profile"
+              element={
+                <ProtectedRoute allowedRole="student">
+                  <StudentProfile />
                 </ProtectedRoute>
               }
             />
