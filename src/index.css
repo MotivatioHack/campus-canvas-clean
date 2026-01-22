@@ -153,7 +153,12 @@
 @layer components {
   .glass-card {
     @apply bg-card backdrop-blur-xl border border-border/50 rounded-2xl;
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 12px 0 rgba(79, 111, 220, 0.08);
+  }
+  
+  .light .glass-card {
+    box-shadow: 0 4px 16px 0 rgba(79, 111, 220, 0.1);
+    border: 1px solid rgba(79, 111, 220, 0.12);
   }
   
   .fancy .glass-card {
@@ -273,5 +278,24 @@
   
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
+  }
+
+  /* Light theme optimizations */
+  .light .glass-card {
+    transition: all 0.3s ease;
+  }
+
+  .light .glass-card:hover {
+    box-shadow: 0 8px 24px 0 rgba(79, 111, 220, 0.15);
+    transform: translateY(-2px);
+  }
+
+  /* Light theme quick action cards */
+  .light a.glass-card {
+    background: linear-gradient(135deg, #ffffff 0%, #f5f9ff 100%);
+  }
+
+  .light a.glass-card:hover {
+    background: linear-gradient(135deg, #ffffff 0%, #eef3ff 100%);
   }
 }

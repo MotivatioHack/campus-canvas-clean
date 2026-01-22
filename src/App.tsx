@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "./context/ThemeContext";
+import { StudentDashboardThemeProvider } from "./context/StudentDashboardThemeContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ScrollToTop from "./components/ScrollToTop";
 
@@ -55,13 +56,13 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <ThemeProvider>
-        <Toaster />
-        <Sonner />
+      <Toaster />
+      <Sonner />
 
-        <BrowserRouter>
-          <ScrollToTop />
+      <BrowserRouter>
+        <ScrollToTop />
 
+        <ThemeProvider>
           <Routes>
             {/* ---------- Public Routes ---------- */}
             <Route path="/" element={<Index />} />
@@ -83,121 +84,144 @@ const App = () => (
             <Route path="/latest-news" element={<LatestNews />} />
             <Route path="/holidays" element={<Holidays />} />
 
-            {/* ---------- Student Sub Pages (MUST COME BEFORE /* ROUTE) ---------- */}
+            {/* ---------- Student Dashboard Routes (wrapped with StudentDashboardThemeProvider) ---------- */}
             <Route
               path="/dashboard/student/raise-complaint"
               element={
-                <ProtectedRoute allowedRole="student">
-                  <RaiseComplaint />
-                </ProtectedRoute>
+                <StudentDashboardThemeProvider>
+                  <ProtectedRoute allowedRole="student">
+                    <RaiseComplaint />
+                  </ProtectedRoute>
+                </StudentDashboardThemeProvider>
               }
             />
 
             <Route
               path="/dashboard/student/my-complaints"
               element={
-                <ProtectedRoute allowedRole="student">
-                  <MyComplaints />
-                </ProtectedRoute>
+                <StudentDashboardThemeProvider>
+                  <ProtectedRoute allowedRole="student">
+                    <MyComplaints />
+                  </ProtectedRoute>
+                </StudentDashboardThemeProvider>
               }
             />
 
             <Route
               path="/dashboard/student/helpdesk"
               element={
-                <ProtectedRoute allowedRole="student">
-                  <StudentHelpdesk />
-                </ProtectedRoute>
+                <StudentDashboardThemeProvider>
+                  <ProtectedRoute allowedRole="student">
+                    <StudentHelpdesk />
+                  </ProtectedRoute>
+                </StudentDashboardThemeProvider>
               }
             />
 
             <Route
               path="/dashboard/student/chatbot"
               element={
-                <ProtectedRoute allowedRole="student">
-                  <Chatbot />
-                </ProtectedRoute>
+                <StudentDashboardThemeProvider>
+                  <ProtectedRoute allowedRole="student">
+                    <Chatbot />
+                  </ProtectedRoute>
+                </StudentDashboardThemeProvider>
               }
             />
 
             <Route
               path="/dashboard/student/lost-found"
               element={
-                <ProtectedRoute allowedRole="student">
-                  <LostAndFound />
-                </ProtectedRoute>
+                <StudentDashboardThemeProvider>
+                  <ProtectedRoute allowedRole="student">
+                    <LostAndFound />
+                  </ProtectedRoute>
+                </StudentDashboardThemeProvider>
               }
             />
 
             <Route
               path="/dashboard/student/events"
               element={
-                <ProtectedRoute allowedRole="student">
-                  <Events />
-                </ProtectedRoute>
+                <StudentDashboardThemeProvider>
+                  <ProtectedRoute allowedRole="student">
+                    <Events />
+                  </ProtectedRoute>
+                </StudentDashboardThemeProvider>
               }
             />
 
             <Route
               path="/dashboard/student/clubs"
               element={
-                <ProtectedRoute allowedRole="student">
-                  <StudentClubs />
-                </ProtectedRoute>
+                <StudentDashboardThemeProvider>
+                  <ProtectedRoute allowedRole="student">
+                    <StudentClubs />
+                  </ProtectedRoute>
+                </StudentDashboardThemeProvider>
               }
             />
 
             <Route
               path="/dashboard/student/polling"
               element={
-                <ProtectedRoute allowedRole="student">
-                  <Polling />
-                </ProtectedRoute>
+                <StudentDashboardThemeProvider>
+                  <ProtectedRoute allowedRole="student">
+                    <Polling />
+                  </ProtectedRoute>
+                </StudentDashboardThemeProvider>
               }
             />
 
             <Route
               path="/dashboard/student/placements"
               element={
-                <ProtectedRoute allowedRole="student">
-                  <Placements />
-                </ProtectedRoute>
+                <StudentDashboardThemeProvider>
+                  <ProtectedRoute allowedRole="student">
+                    <Placements />
+                  </ProtectedRoute>
+                </StudentDashboardThemeProvider>
               }
             />
 
             <Route
               path="/dashboard/student/notices"
               element={
-                <ProtectedRoute allowedRole="student">
-                  <Notices />
-                </ProtectedRoute>
+                <StudentDashboardThemeProvider>
+                  <ProtectedRoute allowedRole="student">
+                    <Notices />
+                  </ProtectedRoute>
+                </StudentDashboardThemeProvider>
               }
             />
 
             <Route
               path="/dashboard/student/profile"
               element={
-                <ProtectedRoute allowedRole="student">
-                  <StudentProfile />
-                </ProtectedRoute>
+                <StudentDashboardThemeProvider>
+                  <ProtectedRoute allowedRole="student">
+                    <StudentProfile />
+                  </ProtectedRoute>
+                </StudentDashboardThemeProvider>
               }
             />
 
-            {/* ---------- Student Dashboard (CATCH-ALL, MUST COME LAST) ---------- */}
             <Route
               path="/dashboard/student/*"
               element={
-                <ProtectedRoute allowedRole="student">
-                  <Dashboard />
-                </ProtectedRoute>
+                <StudentDashboardThemeProvider>
+                  <ProtectedRoute allowedRole="student">
+                    <Dashboard />
+                  </ProtectedRoute>
+                </StudentDashboardThemeProvider>
               }
             />
 
             {/* ---------- 404 ---------- */}
             <Route path="*" element={<NotFound />} />
           </Routes>
-        </BrowserRouter>
-      </ThemeProvider>
+        </ThemeProvider>
+      </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
 );

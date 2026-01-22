@@ -2,7 +2,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Bell, ArrowLeft, Sun, Moon, Sparkles, X } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useTheme } from "@/context/ThemeContext";
+import { useStudentDashboardTheme } from "@/context/StudentDashboardThemeContext";
 
 interface Notification {
   id: string;
@@ -21,7 +21,7 @@ interface TopNavbarProps {
 const TopNavbar = ({ title, subtitle, notifications = [] }: TopNavbarProps) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme } = useStudentDashboardTheme();
   const [showNotifications, setShowNotifications] = useState(false);
 
   const isHomePage = location.pathname === "/";
@@ -30,11 +30,11 @@ const TopNavbar = ({ title, subtitle, notifications = [] }: TopNavbarProps) => {
   const getThemeClasses = () => {
     switch (theme) {
       case "dark":
-        return "bg-[#1a1a2e] text-white";
+        return "bg-[#1a1a2e] text-white shadow-sm";
       case "fancy":
         return "bg-gradient-to-r from-[#1a1a2e] via-[#16213e] to-[#0f3460] text-white";
       default:
-        return "bg-white text-[#1f2937]";
+        return "bg-white text-[#1f2937] shadow-[0_2px_12px_rgba(79,111,220,0.08)] border-b border-blue-100/50";
     }
   };
 
@@ -45,7 +45,7 @@ const TopNavbar = ({ title, subtitle, notifications = [] }: TopNavbarProps) => {
       case "fancy":
         return "bg-[#16213e]/90 border-[#0f3460] shadow-[0_0_20px_rgba(79,111,220,0.3)]";
       default:
-        return "bg-white border-gray-100";
+        return "bg-white border-blue-100 shadow-[0_4px_16px_rgba(79,111,220,0.1)]";
     }
   };
 

@@ -1,14 +1,14 @@
 import { ReactNode } from "react";
 import { motion } from "framer-motion";
 import Sidebar from "./Sidebar";
-import { useTheme } from "@/context/ThemeContext";
+import { useStudentDashboardTheme } from "@/context/StudentDashboardThemeContext";
 
 interface MainLayoutProps {
   children: ReactNode;
 }
 
 const MainLayout = ({ children }: MainLayoutProps) => {
-  const { theme } = useTheme();
+  const { theme } = useStudentDashboardTheme();
 
   const getBackgroundClasses = () => {
     switch (theme) {
@@ -17,7 +17,7 @@ const MainLayout = ({ children }: MainLayoutProps) => {
       case "fancy":
         return "bg-gradient-to-br from-[#0a0a14] via-[#0f1629] to-[#1a1a2e]";
       default:
-        return "dashboard-bg";
+        return "bg-gradient-to-br from-[#f8fafc] via-[#f0f4f9] to-[#e8eef7]";
     }
   };
 

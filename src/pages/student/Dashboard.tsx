@@ -20,7 +20,7 @@ import ComplaintChart from "@/components/dashboard/students/ComplaintChart";
 import NoticesPreview from "@/components/dashboard/students/NoticesPreview";
 import ComplaintDetailModal from "@/components/dashboard/students/ComplaintDetailModal";
 
-import { useTheme } from "@/context/ThemeContext";
+import { useStudentDashboardTheme } from "@/context/StudentDashboardThemeContext";
 import { dashboardAPI } from "@/modules/student/services/api";
 import { toast } from "@/hooks/use-toast";
 
@@ -59,7 +59,7 @@ const quickActions = [
    DASHBOARD COMPONENT
 ======================= */
 const Dashboard = () => {
-  const { theme } = useTheme();
+  const { theme } = useStudentDashboardTheme();
   const [selectedComplaint, setSelectedComplaint] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [dashboardData, setDashboardData] = useState({

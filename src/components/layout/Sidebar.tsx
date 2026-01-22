@@ -16,7 +16,7 @@ import {
   LogOut,
   User,
 } from "lucide-react";
-import { useTheme } from "@/context/ThemeContext";
+import { useStudentDashboardTheme } from "@/context/StudentDashboardThemeContext";
 
 const menuItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard/student" },
@@ -35,7 +35,7 @@ const menuItems = [
 const Sidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { theme } = useTheme();
+  const { theme } = useStudentDashboardTheme();
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
 
   const handleLogout = () => {
@@ -49,7 +49,7 @@ const Sidebar = () => {
       case "fancy":
         return "bg-gradient-to-b from-[#0f3460] via-[#16213e] to-[#1a1a2e] shadow-[0_0_40px_rgba(79,111,220,0.4)]";
       default:
-        return "sidebar-gradient";
+        return "bg-gradient-to-b from-[#4f6fdc] to-[#5b7cfa]";
     }
   };
 
@@ -58,10 +58,10 @@ const Sidebar = () => {
       initial={{ x: -280 }}
       animate={{ x: 0 }}
       transition={{ duration: 0.3, ease: "easeOut" }}
-      className={`fixed left-0 top-0 h-screen w-64 rounded-r-3xl shadow-sidebar z-50 flex flex-col overflow-hidden ${getSidebarClasses()}`}
+      className={`fixed left-0 top-0 h-screen w-64 rounded-r-3xl ${theme === "light" ? "shadow-[4px_0_20px_rgba(79,111,220,0.15)]" : "shadow-sidebar"} z-50 flex flex-col overflow-hidden ${getSidebarClasses()}`}
     >
       {/* Student Profile Card */}
-      <div className="p-6 border-b border-white/10">
+      <div className={`p-6 ${theme === "light" ? "border-b border-blue-200/30" : "border-b border-white/10"}`}>
         <div className="flex items-center gap-4">
           <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
             theme === "fancy" ? "bg-gradient-to-br from-[#4f6fdc] to-[#9333ea]" : "bg-white/20"
@@ -95,7 +95,11 @@ const Sidebar = () => {
                     isActive
                       ? theme === "fancy"
                         ? "bg-gradient-to-r from-[#4f6fdc] to-[#9333ea] text-white font-medium shadow-lg shadow-[#4f6fdc]/30"
+                        : theme === "light"
+                        ? "bg-white/95 text-[#4f6fdc] font-medium shadow-md"
                         : "bg-white text-[#4f6fdc] font-medium shadow-md"
+                      : theme === "light"
+                      ? "text-white/80 hover:bg-white/20 hover:text-white"
                       : "text-white/90 hover:bg-white/10"
                   }`}
                 >
