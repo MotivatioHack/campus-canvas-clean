@@ -9,23 +9,28 @@ import StatusFeedback from "../components/auth/StatusFeedback";
 export default function Login() {
   const navigate = useNavigate();
 
-  // Role must NEVER be undefined
-  const [role, setRole] = useState("student");
-
+  /* ==========================
+     STATE
+  ========================== */
+  const [role, setRole] = useState("student"); // never undefined
   const [formData, setFormData] = useState({
     username: "",
     password: "",
   });
-
   const [isLoading, setIsLoading] = useState(false);
   const [status, setStatus] = useState({ type: null, message: "" });
 
+  /* ==========================
+     SUBMIT HANDLER
+  ========================== */
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (isLoading) return; // hard guard
+
     setIsLoading(true);
     setStatus({ type: "loading", message: "Verifying credentials..." });
 
-    // Hard safety fallback
     const roleToSend = role || "student";
 
     try {
@@ -42,7 +47,10 @@ export default function Login() {
       const data = await response.json();
 
       if (!response.ok) {
-        setStatus({ type: "error", message: data.message || "Login failed" });
+        setStatus({
+          type: "error",
+          message: data?.message || "Invalid credentials",
+        });
         setIsLoading(false);
         return;
       }
@@ -55,33 +63,48 @@ export default function Login() {
       localStorage.setItem("role", data.role);
       localStorage.setItem("userName", data.name || "");
 
-      setStatus({ type: "success", message: "Login successful. Redirecting..." });
+      setStatus({
+        type: "success",
+        message: "Login successful. Redirecting...",
+      });
 
       /* ==========================
          ROLE-BASED REDIRECT
-         (Backend OR Frontend Safe)
       ========================== */
       setTimeout(() => {
+        // Highest priority: backend-controlled redirect
         if (data.redirectUrl) {
-          // Preferred: backend-controlled redirect
-          navigate(data.redirectUrl);
-        } else {
-          // Fallback: frontend-controlled redirect
-          if (data.role === "student") navigate("/dashboard/student");
-          else if (data.role === "faculty") navigate("/dashboard/faculty");
-          else if (data.role === "admin") navigate("/dashboard/admin");
-          else navigate("/");
+          navigate(data.redirectUrl, { replace: true });
+          return;
         }
-      }, 900);
+
+        // Frontend fallback
+        switch (data.role) {
+          case "student":
+            navigate("/dashboard/student", { replace: true });
+            break;
+          case "faculty":
+            navigate("/dashboard/faculty", { replace: true });
+            break;
+          case "admin":
+            navigate("/dashboard/admin", { replace: true });
+            break;
+          default:
+            navigate("/", { replace: true });
+        }
+      }, 800);
     } catch (error) {
       setStatus({
         type: "error",
-        message: "Unable to connect to server. Try again later.",
+        message: "Unable to connect to server. Please try again.",
       });
       setIsLoading(false);
     }
   };
 
+  /* ==========================
+     UI
+  ========================== */
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md p-8 glass-card">
@@ -92,10 +115,7 @@ export default function Login() {
         {/* ROLE SELECTOR */}
         <RoleSelector
           value={role}
-          onChange={(newRole) => {
-            console.log("Role selected:", newRole);
-            setRole(newRole || "student");
-          }}
+          onChange={(newRole) => setRole(newRole || "student")}
         />
 
         <form onSubmit={handleSubmit} className="space-y-4 mt-6">

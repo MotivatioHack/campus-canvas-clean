@@ -1,9 +1,16 @@
 const express = require('express');
 const router = express.Router();
 
-// This route only triggers if the user is a verified student
+// Student dashboard home
 router.get('/', (req, res) => {
-    res.send("Student Dashboard – Placeholder. This is private data for students only.");
+    res.json({
+        success: true,
+        message: `Welcome to Student Dashboard, ${req.user.role}!`,
+        user: {
+            id: req.user.id,
+            role: req.user.role
+        }
+    });
 });
 
 module.exports = router;

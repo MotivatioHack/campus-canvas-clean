@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import MainLayout from "@/components/layout/MainLayout";
 import { toast } from "@/hooks/use-toast";
+import { complaintAPI } from "@/modules/student/services/api";
 
 const categories = [
   { id: "hostel", title: "Hostel Complaint", description: "Room, maintenance, facilities issues", icon: Home, color: "#4f6fdc" },
@@ -34,6 +35,7 @@ const subCategories: Record<string, string[]> = {
 
 const RaiseComplaint = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     subCategory: "",
     subject: "",
@@ -41,15 +43,48 @@ const RaiseComplaint = () => {
     file: null as File | null,
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const complaintId = `CMP${Math.random().toString().slice(2, 6)}`;
-    toast({
-      title: "Complaint Submitted Successfully!",
-      description: `Your complaint ID is ${complaintId}. Status: Pending`,
-    });
-    setSelectedCategory(null);
-    setFormData({ subCategory: "", subject: "", description: "", file: null });
+    
+    if (!selectedCategory || !formData.subCategory || !formData.subject || !formData.description) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const complaintData = {
+        category: selectedCategory,
+        subCategory: formData.subCategory,
+        subject: formData.subject,
+        description: formData.description,
+      };
+
+      const response = await complaintAPI.create(complaintData);
+
+      toast({
+        title: "Complaint Submitted Successfully!",
+        description: `Your complaint ID is ${response.complaintId}. Status: ${response.status}`,
+      });
+
+      // Reset form
+      setSelectedCategory(null);
+      setFormData({ subCategory: "", subject: "", description: "", file: null });
+
+    } catch (error: any) {
+      toast({
+        title: "Submission Failed",
+        description: error.message || "Failed to submit complaint. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -182,10 +217,20 @@ const RaiseComplaint = () => {
 
               <button
                 type="submit"
-                className="w-full py-3 px-6 rounded-xl bg-[#4f6fdc] hover:bg-[#4560c7] text-white font-medium flex items-center justify-center gap-2 transition-colors shadow-lg shadow-[#4f6fdc]/30"
+                disabled={isSubmitting}
+                className="w-full py-3 px-6 rounded-xl bg-[#4f6fdc] hover:bg-[#4560c7] disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-medium flex items-center justify-center gap-2 transition-colors shadow-lg shadow-[#4f6fdc]/30"
               >
-                <Send className="w-4 h-4" />
-                Submit Complaint
+                {isSubmitting ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Submitting...
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-4 h-4" />
+                    Submit Complaint
+                  </>
+                )}
               </button>
             </form>
           </motion.div>

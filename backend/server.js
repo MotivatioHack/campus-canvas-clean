@@ -25,6 +25,7 @@ app.use((req, res, next) => {
 
 // --- REGISTER ALL ROUTES ---
 app.use('/api/auth', require('./routes/authRoutes'));
+app.use('/api/student', require('./middleware/authMiddleware').verifyRole('student'), require('./routes/studentRoutes'));
 app.use('/api/subs', require('./routes/subRoutes'));
 app.use('/api/contact', require('./routes/contactRoutes'));
 

@@ -30,10 +30,11 @@ import NotFound from "./pages/NotFound";
 
 /* =======================
    Student Dashboard Pages
-   (MERGED – NO SEPARATE FOLDER)
 ======================= */
 import Dashboard from "./pages/student/Dashboard";
 import RaiseComplaint from "./pages/student/RaiseComplaint";
+import MyComplaints from "./pages/student/MyComplaints";
+import StudentHelpdesk from "./pages/student/StudentHelpdesk";
 import Chatbot from "./pages/Chatbot";
 
 /* =======================
@@ -52,7 +53,6 @@ const App = () => (
         <Sonner />
 
         <BrowserRouter>
-          {/* 🔧 Scroll position reset on every route change */}
           <ScrollToTop />
 
           <Routes>
@@ -76,16 +76,7 @@ const App = () => (
             <Route path="/latest-news" element={<LatestNews />} />
             <Route path="/holidays" element={<Holidays />} />
 
-            {/* ---------- Student Protected Routes ---------- */}
-            <Route
-              path="/dashboard/student"
-              element={
-                <ProtectedRoute allowedRole="student">
-                  <Dashboard />
-                </ProtectedRoute>
-              }
-            />
-
+            {/* ---------- Student Sub Pages (MUST COME BEFORE /* ROUTE) ---------- */}
             <Route
               path="/dashboard/student/raise-complaint"
               element={
@@ -96,10 +87,38 @@ const App = () => (
             />
 
             <Route
-              path="/dashboard/chatbot"
+              path="/dashboard/student/my-complaints"
+              element={
+                <ProtectedRoute allowedRole="student">
+                  <MyComplaints />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/dashboard/student/helpdesk"
+              element={
+                <ProtectedRoute allowedRole="student">
+                  <StudentHelpdesk />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/dashboard/student/chatbot"
               element={
                 <ProtectedRoute allowedRole="student">
                   <Chatbot />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* ---------- Student Dashboard (CATCH-ALL, MUST COME LAST) ---------- */}
+            <Route
+              path="/dashboard/student/*"
+              element={
+                <ProtectedRoute allowedRole="student">
+                  <Dashboard />
                 </ProtectedRoute>
               }
             />
