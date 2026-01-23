@@ -9,6 +9,8 @@ const noticeController = require('../controllers/noticeController');
 const studentDashboard = require('../controllers/studentDashboard');
 const helpdeskController = require('../controllers/helpdeskController');
 const lostFoundController = require('../controllers/lostFoundController');
+const eventController = require('../controllers/eventController');
+
 // --- MULTER STORAGE CONFIGURATION ---
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -60,4 +62,11 @@ router.get('/dashboard', studentDashboard.getDashboardData);
 router.post('/lost-found', lostFoundController.createPost);
 router.get('/lost-found', lostFoundController.getAllPosts);
 router.put('/lost-found/:id/claim', lostFoundController.claimItem);
+
+
+// --- EVENT ROUTES ---
+router.get('/events', eventController.getAllEvents);
+router.get('/events/upcoming', eventController.getUpcomingEvents);
+// Add this under your existing event routes
+router.post('/events/register', eventController.registerForEvent);
 module.exports = router;

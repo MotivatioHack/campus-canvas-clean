@@ -76,7 +76,18 @@ export const dashboardAPI = {
     });
   }
 };
+export const eventAPI = {
+  // Fetch all events (upcoming and past)
+  getAll: async () => apiRequest('/student/events'),
+  
+  // Fetch only upcoming events
+  getUpcoming: async () => apiRequest('/student/events/upcoming'),
 
+  register: async (eventId: string) => apiRequest('/student/events/register', {
+    method: 'POST',
+    body: JSON.stringify({ eventId }),
+  }),
+};
 // --- NEW MODULE: LOST & FOUND ---
 export const lostFoundAPI = {
   // Fetch all items from the database
@@ -108,4 +119,5 @@ export default {
   notification: notificationAPI,
   dashboard: dashboardAPI,
   lostFound: lostFoundAPI,
-};
+  event: eventAPI, // Add this line
+};eventAPI
