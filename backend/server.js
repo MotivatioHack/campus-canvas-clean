@@ -28,7 +28,8 @@ app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/student', require('./middleware/authMiddleware').verifyRole('student'), require('./routes/studentRoutes'));
 app.use('/api/subs', require('./routes/subRoutes'));
 app.use('/api/contact', require('./routes/contactRoutes'));
-
+// This makes the 'uploads' folder accessible via URL (e.g., http://localhost:5000/uploads/...)
+app.use('/uploads', express.static('uploads'));
 const PORT = process.env.PORT || 5000;
 
 app.get('/', (req, res) => {

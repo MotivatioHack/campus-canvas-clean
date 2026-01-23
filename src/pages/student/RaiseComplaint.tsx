@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Home, 
@@ -8,8 +8,12 @@ import {
   Search, 
   HelpCircle,
   ArrowLeft,
+  CheckCircle,
   Upload,
-  Send
+  Send,
+  X,
+  FileText, // Add this
+  Loader2   // Add this
 } from "lucide-react";
 import MainLayout from "@/components/layout/MainLayout";
 import { toast } from "@/hooks/use-toast";
@@ -36,6 +40,10 @@ const subCategories: Record<string, string[]> = {
 const RaiseComplaint = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Ref to trigger the hidden file input
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [formData, setFormData] = useState({
     subCategory: "",
     subject: "",
@@ -58,18 +66,23 @@ const RaiseComplaint = () => {
     setIsSubmitting(true);
 
     try {
-      const complaintData = {
-        category: selectedCategory,
-        subCategory: formData.subCategory,
-        subject: formData.subject,
-        description: formData.description,
-      };
+      // Create FormData to handle both text and files
+      const data = new FormData();
+      data.append("category", selectedCategory);
+      data.append("subCategory", formData.subCategory);
+      data.append("subject", formData.subject);
+      data.append("description", formData.description);
+      
+      // If a file exists, append it using the key 'file' (matching backend)
+      if (formData.file) {
+        data.append("file", formData.file);
+      }
 
-      const response = await complaintAPI.create(complaintData);
+      const response = await complaintAPI.create(data);
 
       toast({
         title: "Complaint Submitted Successfully!",
-        description: `Your complaint ID is ${response.complaintId}. Status: ${response.status}`,
+        description: `Your complaint ID is ${response.complaintId}.`,
       });
 
       // Reset form
@@ -79,7 +92,7 @@ const RaiseComplaint = () => {
     } catch (error: any) {
       toast({
         title: "Submission Failed",
-        description: error.message || "Failed to submit complaint. Please try again.",
+        description: error.response?.data?.message || "Failed to submit complaint. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -198,23 +211,57 @@ const RaiseComplaint = () => {
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-[#1f2937] mb-2">
-                  Attachment (Optional)
-                </label>
-                <div className="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center hover:border-[#4f6fdc] transition-colors cursor-pointer">
-                  <Upload className="w-8 h-8 mx-auto mb-2 text-[#6b7280]" />
-                  <p className="text-sm text-[#6b7280]">
-                    Drag & drop or click to upload
-                  </p>
-                  <input
-                    type="file"
-                    className="hidden"
-                    onChange={(e) => setFormData({ ...formData, file: e.target.files?.[0] || null })}
-                  />
-                </div>
-              </div>
-
+             <div>
+  <label className="block text-sm font-medium text-[#1f2937] mb-2">
+    Attachment (Optional)
+  </label>
+  <div 
+    onClick={() => fileInputRef.current?.click()}
+    className={`border-2 border-dashed rounded-xl p-6 text-center transition-all cursor-pointer ${
+      formData.file 
+        ? "border-green-500 bg-green-50" 
+        : "border-gray-200 hover:border-[#4f6fdc]"
+    }`}
+  >
+    {formData.file ? (
+      <div className="flex flex-col items-center animate-in fade-in zoom-in duration-300">
+        <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-2">
+          <CheckCircle className="w-6 h-6 text-green-600" />
+        </div>
+        <p className="text-sm font-medium text-green-800">File Selected!</p>
+        <p className="text-xs text-green-600 mt-1 truncate max-w-[200px]">
+          {formData.file.name}
+        </p>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation(); // Prevents opening the file window again
+            setFormData({ ...formData, file: null });
+          }}
+          className="mt-3 text-xs font-bold text-red-500 hover:underline"
+        >
+          Remove and change
+        </button>
+      </div>
+    ) : (
+      <>
+        <Upload className="w-8 h-8 mx-auto mb-2 text-[#6b7280]" />
+        <p className="text-sm text-[#6b7280]">
+          Drag & drop or <span className="text-[#4f6fdc] font-semibold">click to upload</span>
+        </p>
+        <p className="text-[10px] text-gray-400 mt-1">Max 5MB (JPG, PNG, PDF)</p>
+      </>
+    )}
+    
+    <input
+      type="file"
+      ref={fileInputRef}
+      className="hidden"
+      accept=".jpg,.jpeg,.png,.pdf"
+      onChange={(e) => setFormData({ ...formData, file: e.target.files?.[0] || null })}
+    />
+  </div>
+</div>
               <button
                 type="submit"
                 disabled={isSubmitting}
@@ -222,7 +269,7 @@ const RaiseComplaint = () => {
               >
                 {isSubmitting ? (
                   <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <Loader2 className="w-4 h-4 animate-spin" />
                     Submitting...
                   </>
                 ) : (

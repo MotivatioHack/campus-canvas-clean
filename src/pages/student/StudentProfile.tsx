@@ -22,6 +22,7 @@ const Profile = () => {
     course: "",
     year: "",
     username: "",
+    oldPassword: "", // Added for security flow
     password: "",
     confirmPassword: "",
     profilePicture: null
@@ -60,10 +61,9 @@ const Profile = () => {
     fetchProfileData();
   }, []);
 
-  // NEW: HANDLE SAVE LOGIC
+  // HANDLE SAVE LOGIC (Personal Info)
   const handleSave = async () => {
     try {
-      // Basic validation
       if (!profile.fullName || !profile.mobileNumber) {
         toast({ title: "Error", description: "Name and Mobile are required", variant: "destructive" });
         return;
@@ -81,6 +81,39 @@ const Profile = () => {
     } catch (error) {
       console.error("Save error:", error);
       toast({ title: "Error", description: "Failed to update profile", variant: "destructive" });
+    }
+  };
+
+  // NEW: HANDLE PASSWORD RESET (Logic to be completed tomorrow)
+ const handlePasswordReset = async () => {
+    // 1. Basic Frontend Validation
+    if (!profile.oldPassword || !profile.password || !profile.confirmPassword) {
+        toast({ title: "Required", description: "Please fill all password fields", variant: "destructive" });
+        return;
+    }
+    if (profile.password !== profile.confirmPassword) {
+        toast({ title: "Error", description: "New passwords do not match", variant: "destructive" });
+        return;
+    }
+    
+    try {
+      // 2. Call the API
+      const response = await dashboardAPI.changePassword({
+        oldPassword: profile.oldPassword,
+        newPassword: profile.password
+      });
+
+      if (response.success) {
+        toast({ title: "Success", description: "Password changed! Use your new password next time." });
+        // 3. Clear the password fields for security
+        setProfile(prev => ({ ...prev, oldPassword: "", password: "", confirmPassword: "" }));
+      }
+    } catch (error: any) {
+      toast({ 
+        title: "Update Failed", 
+        description: error.message || "Incorrect current password", 
+        variant: "destructive" 
+      });
     }
   };
 
@@ -114,7 +147,6 @@ const Profile = () => {
              )}
           </div>
           
-          {/* Dynamic Format Reference: John Doe / PRN / Dept / Course • Year */}
           <h2 className="text-xl font-bold">{profile.fullName || "Name Not Set"}</h2>
           <p className="text-[#4f6fdc] font-semibold">{profile.prn || "PRN Not Available"}</p>
           <p className={`text-sm mt-1 ${theme === "light" ? "text-gray-600" : "text-gray-400"}`}>
@@ -136,8 +168,6 @@ const Profile = () => {
           <h3 className="text-lg font-semibold mb-6">Update Personal Information</h3>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            
-            {/* Full Name - Editable */}
             <div>
               <label className="text-sm opacity-70">Full Name</label>
               <div className="relative mt-1">
@@ -150,7 +180,6 @@ const Profile = () => {
               </div>
             </div>
 
-            {/* Username - Editable */}
             <div>
               <label className="text-sm opacity-70">Username</label>
               <div className="relative mt-1">
@@ -163,7 +192,6 @@ const Profile = () => {
               </div>
             </div>
 
-            {/* Email Field - Read Only (Secure) */}
             <div>
               <label className="text-sm opacity-70">College Email (Locked)</label>
               <div className="relative mt-1">
@@ -172,7 +200,6 @@ const Profile = () => {
               </div>
             </div>
 
-            {/* Mobile Field - Editable */}
             <div>
               <label className="text-sm opacity-70">Mobile Number</label>
               <div className="relative mt-1">
@@ -185,7 +212,6 @@ const Profile = () => {
               </div>
             </div>
 
-            {/* PRN Field - Read Only */}
             <div>
               <label className="text-sm opacity-70">PRN (Locked)</label>
               <div className="relative mt-1">
@@ -194,7 +220,6 @@ const Profile = () => {
               </div>
             </div>
 
-            {/* Department Field - Read Only */}
             <div>
               <label className="text-sm opacity-70">Department (Locked)</label>
               <div className="relative mt-1">
@@ -204,7 +229,6 @@ const Profile = () => {
             </div>
           </div>
 
-          {/* Action Button */}
           <div className="mt-8 flex justify-end">
             <button
               onClick={handleSave}
@@ -212,6 +236,62 @@ const Profile = () => {
             >
               <Save size={18} />
               Save Changes
+            </button>
+          </div>
+
+          {/* Divider */}
+          <div className="my-8 border-t border-gray-100/10" />
+
+          {/* Reset Password Section */}
+          <h3 className="text-lg font-semibold mb-6 text-red-500">Security: Reset Password</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <label className="text-sm opacity-70">Old Password</label>
+              <div className="relative mt-1">
+                <Lock className="absolute left-3 top-3 opacity-40" size={18} />
+                <input 
+                  type="password"
+                  placeholder="Current Password"
+                  onChange={(e) => setProfile({...profile, oldPassword: e.target.value})}
+                  className={getInputClasses()} 
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-sm opacity-70">New Password</label>
+              <div className="relative mt-1">
+                <Lock className="absolute left-3 top-3 opacity-40" size={18} />
+                <input 
+                  type="password"
+                  placeholder="Min 6 characters"
+                  onChange={(e) => setProfile({...profile, password: e.target.value})}
+                  className={getInputClasses()} 
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-sm opacity-70">Confirm New</label>
+              <div className="relative mt-1">
+                <Lock className="absolute left-3 top-3 opacity-40" size={18} />
+                <input 
+                  type="password"
+                  placeholder="Repeat Password"
+                  onChange={(e) => setProfile({...profile, confirmPassword: e.target.value})}
+                  className={getInputClasses()} 
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-8 flex justify-end">
+            <button
+              onClick={handlePasswordReset}
+              className="px-8 py-3 bg-red-500 text-white rounded-xl font-medium hover:bg-red-600 transition-all flex items-center gap-2 shadow-lg shadow-red-500/20"
+            >
+              <Save size={18} />
+              Update Password
             </button>
           </div>
         </div>

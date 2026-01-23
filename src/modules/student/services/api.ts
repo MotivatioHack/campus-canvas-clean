@@ -5,16 +5,29 @@ const getAuthToken = () => localStorage.getItem('token');
 const getAuthHeaders = () => {
   const token = getAuthToken();
   return {
-    'Content-Type': 'application/json',
+    // Content-Type is now handled dynamically in apiRequest to support file uploads
     'Authorization': token ? `Bearer ${token}` : '',
   };
 };
 
 const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
   const url = `${API_BASE_URL}${endpoint}`;
+  
+  const headers: any = getAuthHeaders();
+
+  // LOGIC: If the body is NOT FormData, we set it to JSON.
+  // If it IS FormData (like our complaint), we let the browser set the 
+  // Content-Type automatically with the correct "boundary".
+  if (!(options.body instanceof FormData)) {
+    headers['Content-Type'] = 'application/json';
+  }
+
   const config: RequestInit = {
-    headers: getAuthHeaders(),
     ...options,
+    headers: {
+      ...headers,
+      ...options.headers,
+    },
   };
 
   try {
@@ -29,7 +42,11 @@ const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
 };
 
 export const complaintAPI = {
-  create: async (complaintData: any) => apiRequest('/student/complaints', { method: 'POST', body: JSON.stringify(complaintData) }),
+  // Removed JSON.stringify here so FormData remains a valid object for the browser
+  create: async (complaintData: any) => apiRequest('/student/complaints', { 
+    method: 'POST', 
+    body: complaintData 
+  }),
   getAll: async (page = 1, limit = 10) => apiRequest(`/student/complaints?page=${page}&limit=${limit}`),
   getStats: async () => apiRequest('/student/complaints/stats'),
   getRecent: async (limit = 5) => apiRequest(`/student/complaints/recent?limit=${limit}`),
@@ -49,11 +66,17 @@ export const notificationAPI = {
 export const dashboardAPI = {
   getDashboardData: async () => apiRequest('/student/dashboard'),
   
-  // NEW: Update function added here
   updateProfile: async (userData: { fullName: string; mobileNumber: string; username: string }) => {
     return apiRequest('/auth/update-profile', {
       method: 'PUT',
       body: JSON.stringify(userData),
+    });
+  },
+
+  changePassword: async (passwordData: { oldPassword: string; newPassword: any }) => {
+    return apiRequest('/auth/change-password', {
+      method: 'PUT',
+      body: JSON.stringify(passwordData),
     });
   }
 };

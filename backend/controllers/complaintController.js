@@ -10,27 +10,35 @@ const generateComplaintId = () => {
 
 // Create new complaint
 exports.createComplaint = async (req, res) => {
+    // 1. Get a connection for the transaction
+    const connection = await db.getConnection();
+    
     try {
         const { category, subCategory, subject, description } = req.body;
         const userId = req.user.id;
-        
+        const filePath = req.file ? req.file.path : null;
+
+        // Validation Check
         if (!category || !subCategory || !subject || !description) {
-            return res.status(400).json({
-                success: false,
-                message: "All fields are required"
-            });
+            // Delete file if validation fails to save space
+            if (req.file) fs.unlinkSync(req.file.path); 
+            return res.status(400).json({ success: false, message: "All fields are required" });
         }
 
         const complaintId = generateComplaintId();
-        
-        const [result] = await db.execute(
-            `INSERT INTO complaints (complaint_id, user_id, category, sub_category, subject, description) 
-             VALUES (?, ?, ?, ?, ?, ?)`,
-            [complaintId, userId, category, subCategory, subject, description]
+
+        // 2. START TRANSACTION
+        await connection.beginTransaction();
+
+        // 3. Insert Complaint
+        const [complaintResult] = await connection.execute(
+            `INSERT INTO complaints (complaint_id, user_id, category, sub_category, subject, description, file_path) 
+             VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [complaintId, userId, category, subCategory, subject, description, filePath]
         );
 
-        // Create notification for user
-        await db.execute(
+        // 4. Insert Notification
+        await connection.execute(
             `INSERT INTO notifications (user_id, title, message, type, related_id) 
              VALUES (?, ?, ?, ?, ?)`,
             [
@@ -38,9 +46,12 @@ exports.createComplaint = async (req, res) => {
                 'Complaint Submitted Successfully',
                 `Your complaint ${complaintId} has been submitted and is under review.`,
                 'complaint',
-                result.insertId
+                complaintResult.insertId
             ]
         );
+
+        // 5. COMMIT (Save everything forever)
+        await connection.commit();
 
         res.status(201).json({
             success: true,
@@ -50,11 +61,19 @@ exports.createComplaint = async (req, res) => {
         });
 
     } catch (error) {
+        // 6. ROLLBACK (Undo everything if an error occurs)
+        await connection.rollback();
+        
+        // Delete the file if it was uploaded but the DB save failed
+        if (req.file && fs.existsSync(req.file.path)) {
+            fs.unlinkSync(req.file.path);
+        }
+
         console.error('Create complaint error:', error);
-        res.status(500).json({
-            success: false,
-            message: "Failed to submit complaint"
-        });
+        res.status(500).json({ success: false, message: "Failed to submit complaint" });
+    } finally {
+        // 7. ALWAYS release the connection back to the pool
+        connection.release();
     }
 };
 
@@ -62,11 +81,15 @@ exports.createComplaint = async (req, res) => {
 exports.getUserComplaints = async (req, res) => {
     try {
         const userId = req.user.id;
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 10;
+        
+        // Ensure these are strictly numbers
+        const page = Number(req.query.page) || 1;
+        const limit = Number(req.query.limit) || 10;
         const offset = (page - 1) * limit;
 
-        const [complaints] = await db.execute(
+        // Use .query instead of .execute for queries with LIMIT/OFFSET 
+        // to avoid prepared statement type-casting issues
+        const [complaints] = await db.query(
             `SELECT complaint_id, category, sub_category, subject, description, status, 
                     priority, created_at, updated_at 
              FROM complaints 

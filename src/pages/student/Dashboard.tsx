@@ -28,7 +28,6 @@ const Dashboard = () => {
   const [selectedComplaint, setSelectedComplaint] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   
-  // Initial state matches the shape of our backend response
   const [dashboardData, setDashboardData] = useState<any>({
     stats: { total: 0, pending: 0, inProgress: 0, resolved: 0 },
     recentComplaints: [],
@@ -42,9 +41,6 @@ const Dashboard = () => {
       try {
         setIsLoading(true);
         const response = await dashboardAPI.getDashboardData();
-        
-        // SAFETY FIX: If backend sends data directly, use it. 
-        // If it sends it inside .data, use that.
         const actualData = response?.data || response;
         
         if (actualData) {
@@ -60,12 +56,31 @@ const Dashboard = () => {
     fetchDashboardData();
   }, []);
 
-  // SAFETY FIX: Added "?" (Optional Chaining) to prevent "undefined" crashes
   const stats = [
-    { title: "Total Complaints", value: dashboardData?.stats?.total || 0, icon: FileText, variant: "blue" as const },
-    { title: "Pending", value: dashboardData?.stats?.pending || 0, icon: Clock, variant: "yellow" as const },
-    { title: "In-Progress", value: dashboardData?.stats?.inProgress || 0, icon: Loader2, variant: "orange" as const },
-    { title: "Resolved", value: dashboardData?.stats?.resolved || 0, icon: CheckCircle, variant: "green" as const },
+    { 
+      title: "Total Complaints", 
+      value: dashboardData?.stats?.total || 0, 
+      icon: FileText, 
+      variant: "blue" as const 
+    },
+    { 
+      title: "Pending", 
+      value: dashboardData?.stats?.pending || 0, 
+      icon: Clock, 
+      variant: "yellow" as const 
+    },
+    { 
+      title: "In-Progress", 
+      value: dashboardData?.stats?.inProgress || 0, 
+      icon: Loader2, 
+      variant: "orange" as const 
+    },
+    { 
+      title: "Resolved", 
+      value: dashboardData?.stats?.resolved || 0, 
+      icon: CheckCircle, 
+      variant: "green" as const 
+    },
   ];
 
   const handleViewComplaint = (id: string) => {
@@ -89,18 +104,20 @@ const Dashboard = () => {
   return (
     <MainLayout>
       <TopNavbar
-  title="Student Dashboard"
-  subtitle="Loading your profile..."
-  notifications={dashboardData?.notifications || []}
-  userData={dashboardData?.user} // This sends the fetched user data to the Navbar!
-/>
+        title="Student Dashboard"
+        subtitle={`Welcome back, ${dashboardData?.user?.full_name || 'Student'}`}
+        notifications={dashboardData?.notifications || []}
+        userData={dashboardData?.user}
+      />
 
+      {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
         {stats.map((stat, index) => (
           <StatCard key={stat.title} {...stat} delay={index * 0.1} />
         ))}
       </div>
 
+      {/* Quick Actions */}
       <div className="mb-6">
         <h2 className={`text-lg font-semibold mb-4 ${theme === "light" ? "text-[#1f2937]" : "text-white"}`}>
           Quick Actions
@@ -112,6 +129,7 @@ const Dashboard = () => {
         </div>
       </div>
 
+      {/* Recent Complaints Table */}
       <div className="grid grid-cols-1 gap-6">
         <ComplaintsTable
           complaints={dashboardData?.recentComplaints || []}
@@ -119,11 +137,15 @@ const Dashboard = () => {
         />
       </div>
 
+      {/* Chart and Notices */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-        <ComplaintChart />
+        {/* --- FIXED: Passing the stats prop --- */}
+        <ComplaintChart stats={dashboardData?.stats} />
+        
         <NoticesPreview notices={dashboardData?.notices || []} />
       </div>
 
+      {/* Detail Modal */}
       {selectedComplaint && (
         <ComplaintDetailModal
           complaint={selectedComplaint}

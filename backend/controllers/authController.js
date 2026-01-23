@@ -68,10 +68,43 @@ const updateProfile = async (req, res) => {
         res.status(500).json({ success: false, message: "Failed to update profile: " + err.message });
     }
 };
+// --- 3. CHANGE PASSWORD LOGIC ---
+const changePassword = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { oldPassword, newPassword } = req.body;
 
+        // 1. Get the current user from DB to find the existing hashed password
+        const [rows] = await db.execute("SELECT password FROM users WHERE id = ?", [userId]);
+        const user = rows[0];
+
+        if (!user) {
+            return res.status(404).json({ success: false, message: "User not found" });
+        }
+
+        // 2. Compare Old Password with the Hashed Password in DB
+        const isMatch = await bcrypt.compare(oldPassword, user.password);
+        if (!isMatch) {
+            return res.status(401).json({ success: false, message: "Incorrect current password" });
+        }
+
+        // 3. Hash the New Password
+        const salt = await bcrypt.genSalt(10);
+        const hashedNewPassword = await bcrypt.hash(newPassword, salt);
+
+        // 4. Update the Database
+        await db.execute("UPDATE users SET password = ? WHERE id = ?", [hashedNewPassword, userId]);
+
+        res.json({ success: true, message: "Password updated successfully!" });
+    } catch (err) {
+        console.error("Change Password Error:", err.message);
+        res.status(500).json({ success: false, message: "Server Error during password reset" });
+    }
+};
 // --- 3. EXPORT ALL FUNCTIONS AT ONCE ---
 // This ensures authRoutes.js can see both 'login' and 'updateProfile'
 module.exports = {
     login,
-    updateProfile
+    updateProfile,
+    changePassword // Added this
 };
