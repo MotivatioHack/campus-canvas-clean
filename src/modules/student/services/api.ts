@@ -5,19 +5,16 @@ const getAuthToken = () => localStorage.getItem('token');
 const getAuthHeaders = () => {
   const token = getAuthToken();
   return {
-    // Content-Type is now handled dynamically in apiRequest to support file uploads
     'Authorization': token ? `Bearer ${token}` : '',
   };
 };
 
 const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
   const url = `${API_BASE_URL}${endpoint}`;
-  
   const headers: any = getAuthHeaders();
 
-  // LOGIC: If the body is NOT FormData, we set it to JSON.
-  // If it IS FormData (like our complaint), we let the browser set the 
-  // Content-Type automatically with the correct "boundary".
+  // If the body is NOT FormData, we set it to JSON.
+  // If it IS FormData, the browser sets the Content-Type with the boundary automatically.
   if (!(options.body instanceof FormData)) {
     headers['Content-Type'] = 'application/json';
   }
@@ -42,7 +39,6 @@ const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
 };
 
 export const complaintAPI = {
-  // Removed JSON.stringify here so FormData remains a valid object for the browser
   create: async (complaintData: any) => apiRequest('/student/complaints', { 
     method: 'POST', 
     body: complaintData 
@@ -81,9 +77,35 @@ export const dashboardAPI = {
   }
 };
 
+// --- NEW MODULE: LOST & FOUND ---
+export const lostFoundAPI = {
+  // Fetch all items from the database
+  getAll: async () => apiRequest('/student/lost-found'),
+  
+  // Claim a found item by its ID
+  claim: async (id: string) => apiRequest(`/student/lost-found/${id}/claim`, { 
+    method: 'PUT' 
+  }),
+
+  // Submit a new lost/found report
+  create: async (itemData: { 
+    type: string; 
+    title: string; 
+    description: string; 
+    category: string; 
+    item_date: string 
+  }) => {
+    return apiRequest('/student/lost-found', {
+      method: 'POST',
+      body: JSON.stringify(itemData),
+    });
+  }
+};
+
 export default {
   complaint: complaintAPI,
   notice: noticeAPI,
   notification: notificationAPI,
   dashboard: dashboardAPI,
+  lostFound: lostFoundAPI,
 };

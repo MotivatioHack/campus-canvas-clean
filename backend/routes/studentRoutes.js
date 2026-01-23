@@ -8,7 +8,7 @@ const complaintController = require('../controllers/complaintController');
 const noticeController = require('../controllers/noticeController');
 const studentDashboard = require('../controllers/studentDashboard');
 const helpdeskController = require('../controllers/helpdeskController');
-
+const lostFoundController = require('../controllers/lostFoundController');
 // --- MULTER STORAGE CONFIGURATION ---
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -55,4 +55,9 @@ router.put('/notifications/read-all', noticeController.markAllNotificationsRead)
 // FIXED: Removed the router.use line that was causing the crash
 router.get('/dashboard', studentDashboard.getDashboardData);
 
+
+// --- LOST AND FOUND ROUTES ---
+router.post('/lost-found', lostFoundController.createPost);
+router.get('/lost-found', lostFoundController.getAllPosts);
+router.put('/lost-found/:id/claim', lostFoundController.claimItem);
 module.exports = router;
