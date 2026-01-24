@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom'; // 1. Import the hook
 
 const floatingBlobs = [
   { size: 400, left: '10%', top: '20%', delay: 0 },
@@ -8,6 +9,19 @@ const floatingBlobs = [
 ];
 
 export default function HeroSection() {
+  const navigate = useNavigate(); // 2. Initialize the hook
+
+  // Handler for Internal Navigation
+  const handleGetStarted = () => {
+    navigate('/register'); // Redirects to the registration page
+  };
+
+  // Handler for External Navigation
+  const handleWatchDemo = () => {
+    const demoUrl = "https://drive.google.com/file/d/1tpegwmzSAqCK0U3fLzLhR2zK7Yfyr7cD/view?usp=drive_link";
+    window.open(demoUrl, "_blank", "noopener,noreferrer"); // Opens safely in a new tab
+  };
+
   return (
     <section id="home" className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
       {/* Background Gradient */}
@@ -25,7 +39,7 @@ export default function HeroSection() {
         }}
       />
 
-      {/* Floating Blobs */}
+      {/* Floating Blobs (Kept exactly as is) */}
       {floatingBlobs.map((blob, index) => (
         <motion.div
           key={index}
@@ -73,7 +87,7 @@ export default function HeroSection() {
         >
           Where Campus
           <br />
-          <span className="text-gradient">Meets Technology</span>
+          <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Meets Technology</span>
         </motion.h1>
 
         {/* Subheading */}
@@ -87,7 +101,7 @@ export default function HeroSection() {
           Connect, collaborate, and thrive in your academic journey.
         </motion.p>
 
-        {/* CTA Buttons */}
+        {/* CTA Buttons - UPDATED HANDLERS */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
@@ -98,6 +112,7 @@ export default function HeroSection() {
             className="btn-primary text-lg px-8 py-4"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
+            onClick={handleGetStarted} // Internal Nav
           >
             Get Started
             <motion.span
@@ -113,6 +128,7 @@ export default function HeroSection() {
             className="btn-secondary text-lg px-8 py-4 flex items-center gap-3"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
+            onClick={handleWatchDemo} // External Link
           >
             <span className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
               <svg className="w-4 h-4 text-primary" fill="currentColor" viewBox="0 0 24 24">
@@ -123,7 +139,7 @@ export default function HeroSection() {
           </motion.button>
         </motion.div>
 
-        {/* Stats Preview */}
+        {/* Stats Preview (Kept exactly as is) */}
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
@@ -151,7 +167,7 @@ export default function HeroSection() {
         </motion.div>
       </div>
 
-      {/* Scroll Indicator */}
+      {/* Scroll Indicator (Kept exactly as is) */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}

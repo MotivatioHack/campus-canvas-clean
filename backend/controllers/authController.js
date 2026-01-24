@@ -12,7 +12,6 @@ const login = async (req, res) => {
             return res.status(400).json({ success: false, message: "Required fields missing." });
         }
 
-        // Fetch user including all specific fields
         const [rows] = await db.execute("SELECT * FROM users WHERE username = ? OR email = ?", [identifier, identifier]);
         const user = rows[0];
 
@@ -32,16 +31,15 @@ const login = async (req, res) => {
             { expiresIn: '1h' }
         );
 
-        // Explicitly sending all database fields to the frontend
         return res.json({
             success: true,
             token,
             role: user.role.toLowerCase(),
             id: user.id,
             full_name: user.full_name,
-            prn: user.prn,               // Maps to Sidebar user.prn
-            department: user.department, // Maps to Sidebar user.department
-            profile_picture: user.profile_picture // Maps to Sidebar user.profile_picture
+            prn: user.prn,
+            department: user.department,
+            profile_picture: user.profile_picture
         });
 
     } catch (err) {
@@ -59,7 +57,6 @@ const register = async (req, res) => {
             facultyId, designation, photo 
         } = req.body;
 
-        // Check if user exists
         const [existing] = await db.execute("SELECT id FROM users WHERE username = ? OR email = ?", [username, email]);
         if (existing.length > 0) {
             return res.status(400).json({ success: false, message: "Username or Email already exists." });
@@ -67,7 +64,6 @@ const register = async (req, res) => {
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // Mapping Frontend names to MySQL Column names
         const sql = `
             INSERT INTO users (
                 role, full_name, email, mobile_number, username, password, 
@@ -82,13 +78,13 @@ const register = async (req, res) => {
             mobile, 
             username, 
             hashedPassword, 
-            studentId || null,      // studentId (Frontend) -> prn (MySQL)
+            studentId || null,
             course || null, 
             yearSemester || null, 
             facultyId || null, 
             designation || null, 
             department, 
-            photo || null           // photo (Frontend) -> profile_picture (MySQL)
+            photo || null
         ];
 
         await db.execute(sql, values);
@@ -100,7 +96,7 @@ const register = async (req, res) => {
     }
 };
 
-// --- 3. UPDATE PROFILE LOGIC ---
+// --- 3. UPDATE PROFILE LOGIC (DEFENSIVE RENDERING FIX) ---
 const updateProfile = async (req, res) => {
     try {
         if (!req.user || !req.user.id) {
@@ -108,19 +104,55 @@ const updateProfile = async (req, res) => {
         }
 
         const userId = req.user.id;
-        const { fullName, mobileNumber, username, department, profilePicture } = req.body;
 
-        const sql = `UPDATE users SET full_name = ?, mobile_number = ?, username = ?, department = ?, profile_picture = ? WHERE id = ?`;
-        const [result] = await db.execute(sql, [fullName, mobileNumber, username, department, profilePicture, userId]);
+        // Extracting data from request body
+        const { 
+            fullName, 
+            mobile, 
+            mobileNumber, 
+            username, 
+            department, 
+            profilePicture 
+        } = req.body;
+
+        /**
+         * BIND PARAMETER FIX:
+         * MySQL2 driver crashes if any value is 'undefined'.
+         * We use ?? null to force undefined values into valid SQL NULLs.
+         */
+        const values = [
+            fullName ?? null,
+            (mobileNumber || mobile) ?? null, // Supports both mobile field names
+            username ?? null,
+            department ?? null,
+            profilePicture ?? null,
+            userId
+        ];
+
+        // Logging the data to your terminal for verification
+        console.log("Updating Profile for User ID:", userId, "with values:", values);
+
+        const sql = `
+            UPDATE users 
+            SET full_name = ?, mobile_number = ?, username = ?, department = ?, profile_picture = ? 
+            WHERE id = ?
+        `;
+
+        const [result] = await db.execute(sql, values);
 
         if (result.affectedRows === 0) {
             return res.status(404).json({ success: false, message: "User not found" });
         }
 
         res.json({ success: true, message: "Profile updated successfully!" });
+
     } catch (err) {
-        console.error("Update Profile Error:", err.message);
-        res.status(500).json({ success: false, message: "Failed to update profile" });
+        // Detailed error logging for the terminal
+        console.error("Update Profile Error Detail:", err.message);
+        res.status(500).json({ 
+            success: false, 
+            message: "Failed to update profile: " + err.message 
+        });
     }
 };
 

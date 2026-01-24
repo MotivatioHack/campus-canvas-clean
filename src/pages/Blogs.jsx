@@ -233,7 +233,7 @@ export default function Blogs() {
               transition={{ delay: 0.1 }}
               className="text-4xl md:text-5xl lg:text-6xl font-display font-bold mb-6"
             >
-              Stories & <span className="text-gradient">Insights</span>
+              Stories & <span className="text-gradient">Insights </span>
             </motion.h1>
             <motion.p
               initial={{ opacity: 0, y: 30 }}

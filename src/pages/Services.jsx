@@ -143,7 +143,7 @@ export default function Services() {
                     <h3 className="font-display font-semibold text-xl mb-3">{service.title}</h3>
                     <p className="text-muted-foreground">{service.description}</p>
                     <div className="mt-4 flex items-center text-primary font-medium">
-                      Learn more
+                      
                       <motion.span
                         className="ml-2"
                         animate={{ x: [0, 4, 0] }}

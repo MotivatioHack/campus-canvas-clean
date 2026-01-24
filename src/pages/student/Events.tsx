@@ -45,9 +45,12 @@ const Events = () => {
         setLoading(true);
         const data = await eventAPI.getAll();
         
-        const formattedEvents = data.map((item: any) => ({
+        // Defensive check: ensure data is an array before mapping
+        const eventData = Array.isArray(data) ? data : [];
+
+        const formattedEvents = eventData.map((item: any) => ({
           id: item.id.toString(),
-          name: item.title,
+          name: item.title || "Untitled Event",
           date: new Date(item.event_date).toLocaleDateString('en-US', { 
             day: 'numeric', 
             month: 'short', 
@@ -58,10 +61,10 @@ const Events = () => {
             minute: '2-digit' 
           }),
           venue: item.location || "To be announced",
-          type: item.event_type,
-          registered: Boolean(item.is_registered), // Real data from DB Join
+          type: item.event_type || "Other",
+          registered: Boolean(item.is_registered),
           attendees: 0,
-          description: item.description
+          description: item.description || "No description available."
         }));
 
         setEvents(formattedEvents);
@@ -72,6 +75,7 @@ const Events = () => {
           description: "Could not load events from server.",
           variant: "destructive",
         });
+        setEvents([]); // Fallback to empty array on error
       } finally {
         setLoading(false);
       }
@@ -82,10 +86,8 @@ const Events = () => {
 
   const handleRegister = async (eventId: string, eventName: string) => {
     try {
-      // 1. Call the backend API
       await eventAPI.register(eventId);
 
-      // 2. Update local state so button changes immediately
       setEvents(prevEvents => prevEvents.map(event => 
         event.id === eventId ? { ...event, registered: true } : event
       ));
@@ -103,12 +105,17 @@ const Events = () => {
     }
   };
 
-  // Logic for the new "Registered" filter + Type filters
-  const filteredEvents = filter === "all" 
-    ? events 
-    : filter === "registered"
-      ? events.filter(e => e.registered)
-      : events.filter(e => e.type.toLowerCase() === filter.toLowerCase());
+  /**
+   * SAFE FILTERING LOGIC
+   * 1. Normalizes strings to lowercase to prevent "Technical" vs "technical" mismatches.
+   * 2. Uses optional chaining to prevent crashes if events list is null.
+   */
+  const filteredEvents = (events || []).filter(e => {
+    if (filter === "all") return true;
+    if (filter === "registered") return e.registered;
+    // Defensive normalization
+    return (e.type || "").toLowerCase() === filter.toLowerCase();
+  });
 
   const getCardClasses = () => {
     switch (theme) {
@@ -228,9 +235,30 @@ const Events = () => {
               </motion.div>
             ))
           ) : (
-            <div className="col-span-full text-center py-20 opacity-50">
-              <p>No events found in this category.</p>
-            </div>
+            /* --- SAFE EMPTY STATE UI --- */
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="col-span-full flex flex-col items-center justify-center py-24"
+            >
+              <div className={`p-6 rounded-full mb-4 ${theme === 'light' ? 'bg-gray-100' : 'bg-white/5'}`}>
+                <Calendar className={`w-12 h-12 ${theme === 'light' ? 'text-gray-300' : 'text-white/20'}`} />
+              </div>
+              <h3 className={`text-lg font-semibold mb-1 ${theme === 'light' ? 'text-gray-900' : 'text-white'}`}>
+                No events found
+              </h3>
+              <p className={`text-sm text-center max-w-xs ${theme === 'light' ? 'text-gray-500' : 'text-white/50'}`}>
+                There are no {filter === 'all' ? '' : filter} events scheduled at the moment.
+              </p>
+              {filter !== "all" && (
+                <button 
+                  onClick={() => setFilter("all")}
+                  className="mt-6 px-6 py-2 rounded-full text-sm font-bold bg-[#4f6fdc]/10 text-[#4f6fdc] hover:bg-[#4f6fdc] hover:text-white transition-all"
+                >
+                  Clear filters
+                </button>
+              )}
+            </motion.div>
           )}
         </div>
       )}

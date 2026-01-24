@@ -184,7 +184,13 @@
       hsl(var(--text-gradient-to)) 100%
     );
   }
-
+  .text-gradient {
+  background: linear-gradient(to right, #4f6fdc, #9333ea);
+  -webkit-background-clip: text; /* Required for Chrome/Safari */
+  background-clip: text;
+  color: transparent;
+  display: inline-block; /* Helps prevent clipping issues in some browsers */
+}
   .btn-primary {
     @apply px-6 py-3 rounded-xl font-semibold text-primary-foreground;
     background: linear-gradient(135deg, 
