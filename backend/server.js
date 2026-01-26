@@ -55,6 +55,8 @@ const PORT = process.env.PORT || 5000;
 app.get('/', (req, res) => {
     res.send('🚀 SmartCampus Backend is running on port 5000');
 });
+// 5. Faculty Specific Routes (Isolated)
+app.use('/api/faculty', verifyRole('faculty'), require('./faculty/routes/facultyDashboardRoutes'));
 
 app.listen(PORT, () => {
     console.log(`🚀 Server is sprinting on http://localhost:${PORT}`);
