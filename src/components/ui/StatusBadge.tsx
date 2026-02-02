@@ -25,18 +25,26 @@ const statusStyles: Record<string, string> = {
 };
 
 export function StatusBadge({ status, className }: StatusBadgeProps) {
-  const normalizedStatus = status.toLowerCase().replace(' ', '_');
-  const style = statusStyles[normalizedStatus] || statusStyles.pending;
-  
+  // CRASH FIX: Default to 'unknown' if status is missing to prevent toLowerCase() error
+  const safeStatus = (status || 'unknown').toLowerCase();
+
+  const variants: Record<string, string> = {
+    active: 'bg-neon-green/10 text-neon-green border-neon-green/50 shadow-[0_0_10px_rgba(0,255,136,0.2)]',
+    blocked: 'bg-neon-pink/10 text-neon-pink border-neon-pink/50 shadow-[0_0_10px_rgba(255,0,212,0.2)]',
+    pending: 'bg-neon-yellow/10 text-neon-yellow border-neon-yellow/50 shadow-[0_0_10px_rgba(255,184,0,0.2)]',
+    resolved: 'bg-neon-cyan/10 text-neon-cyan border-neon-cyan/50 shadow-[0_0_10px_rgba(0,242,255,0.2)]',
+    unknown: 'bg-muted/10 text-muted border-muted/50',
+  };
+
   return (
     <span
       className={cn(
-        'px-3 py-1 text-xs font-semibold rounded-full border uppercase tracking-wider',
-        style,
+        'px-2.5 py-0.5 rounded-full text-[10px] font-bold font-orbitron border uppercase tracking-wider',
+        variants[safeStatus] || variants.unknown,
         className
       )}
     >
-      {status.replace('_', ' ')}
+      {status || 'Unknown'}
     </span>
   );
 }

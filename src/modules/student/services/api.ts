@@ -142,7 +142,29 @@ export const lostFoundAPI = {
     });
   }
 };
+export const helpdeskAPI = {
+  // Fetch all tickets with their chronological message history
+  getTickets: async () => apiRequest('/student/helpdesk/tickets'),
 
+  // Create a brand new support ticket
+  createTicket: async (ticketData: { 
+    category: string; 
+    subject: string; 
+    message: string; 
+    priority: string 
+  }) => apiRequest('/student/helpdesk/tickets', {
+    method: 'POST',
+    body: JSON.stringify(ticketData),
+  }),
+
+  // NEW: Add a reply to an existing ticket using the internal db_id
+  addMessage: async (db_id: number, message: string) => {
+    return apiRequest(`/student/helpdesk/tickets/${db_id}/messages`, {
+      method: 'POST',
+      body: JSON.stringify({ message }),
+    });
+  },
+};
 export default {
   complaint: complaintAPI,
   notice: noticeAPI,
@@ -153,4 +175,5 @@ export default {
   club: clubAPI,
   poll: pollAPI,
   placement: placementAPI,
+  helpdesk: helpdeskAPI,
 };

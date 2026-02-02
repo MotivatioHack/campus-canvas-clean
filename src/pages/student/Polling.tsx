@@ -9,7 +9,7 @@ import {
   PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, 
   BarChart, Bar, XAxis, YAxis, CartesianGrid 
 } from "recharts";
-import { pollAPI } from "@/modules/student/services/api"; // Added API import
+import { pollAPI } from "@/modules/student/services/api";
 
 interface Poll {
   id: string;
@@ -35,7 +35,7 @@ const categoryColors: Record<string, string> = {
 const Polling = () => {
   const { theme } = useTheme();
   const [polls, setPolls] = useState<Poll[]>([]);
-  const [loading, setLoading] = useState(true); // Added loading state
+  const [loading, setLoading] = useState(true);
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
   const [filter, setFilter] = useState<"all" | "active" | "closed">("all");
 
@@ -44,8 +44,25 @@ const Polling = () => {
     try {
       setLoading(true);
       const data = await pollAPI.getAll();
-      setPolls(data);
+      
+      // Formatting DB response to UI expected structure
+      const formattedPolls = data.map((poll: any) => ({
+        ...poll,
+        title: poll.title, 
+        description: poll.description,
+        status: poll.status,
+        deadline: poll.deadline,
+        voted: poll.voted,
+        options: poll.options.map((opt: any) => ({
+          id: opt.id.toString(),
+          text: opt.text,
+          votes: opt.votes
+        }))
+      }));
+
+      setPolls(formattedPolls); // FIXED: Changed from setClubs to setPolls
     } catch (error: any) {
+      console.error("Fetch error:", error);
       toast({
         title: "Error",
         description: "Failed to load polls. Please try again.",
@@ -73,13 +90,12 @@ const Polling = () => {
         description: "Thank you for participating in the poll.",
       });
 
-      // Clear selection and refresh data to show updated charts
       setSelectedOptions({ ...selectedOptions, [pollId]: "" });
       fetchPolls(); 
     } catch (error: any) {
       toast({
         title: "Voting Failed",
-        description: error.message || "Something went wrong.",
+        description: error.response?.data?.message || error.message || "Something went wrong.",
         variant: "destructive",
       });
     }
@@ -163,7 +179,7 @@ const Polling = () => {
                           <Lock className={`w-5 h-5 ${theme === "light" ? "text-[#6b7280]" : "text-white/50"}`} />
                         )}
                       </div>
-                      <div>
+                      <div className="text-left">
                         <div className="flex items-center gap-2 flex-wrap">
                           <h3 className={`font-semibold ${theme === "light" ? "text-[#1f2937]" : "text-white"}`}>
                             {poll.title}

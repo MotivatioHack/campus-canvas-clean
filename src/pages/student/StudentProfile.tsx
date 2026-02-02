@@ -8,7 +8,6 @@ import { toast } from "@/hooks/use-toast";
 import { useTheme } from "@/context/ThemeContext";
 import { dashboardAPI } from "@/modules/student/services/api";
 
-
 const Profile = () => {
   const navigate = useNavigate();
   const { theme } = useTheme();
@@ -23,45 +22,43 @@ const Profile = () => {
     course: "",
     year: "",
     username: "",
-    oldPassword: "", // Added for security flow
+    oldPassword: "",
     password: "",
     confirmPassword: "",
     profilePicture: null
   });
 
   // FETCH REAL DATA
- useEffect(() => {
-  const fetchProfileData = async () => {
-    try {
-      setIsLoading(true);
-      const response = await dashboardAPI.getDashboardData();
-      const userData = response?.user || response?.data?.user;
+  useEffect(() => {
+    const fetchProfileData = async () => {
+      try {
+        setIsLoading(true);
+        const response = await dashboardAPI.getDashboardData();
+        const userData = response?.user || response?.data?.user;
 
-      if (userData) {
-        setProfile(prev => ({
-          ...prev,
-          // LEFT SIDE: Your Frontend State names
-          // RIGHT SIDE: The names from your Backend JSON
-          fullName: userData.full_name || "", 
-          collegeEmail: userData.email || "",
-          mobileNumber: userData.mobile_number || "",
-          prn: userData.prn || "",
-          department: userData.department || "",
-          course: userData.course || "",
-          year: userData.year || "",
-          username: userData.username || "",
-          profilePicture: userData.profile_picture || null
-        }));
+        if (userData) {
+          setProfile(prev => ({
+            ...prev,
+            fullName: userData.full_name || "", 
+            collegeEmail: userData.email || "",
+            mobileNumber: userData.mobile_number || "",
+            prn: userData.prn || "",
+            department: userData.department || "",
+            course: userData.course || "",
+            year: userData.year || "",
+            username: userData.username || "",
+            profilePicture: userData.profile_picture || null
+          }));
+        }
+      } catch (error) {
+        console.error("Profile fetch error:", error);
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      console.error("Profile fetch error:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    };
 
-  fetchProfileData();
-}, []);
+    fetchProfileData();
+  }, []);
 
   // HANDLE SAVE LOGIC (Personal Info)
   const handleSave = async () => {
@@ -71,6 +68,7 @@ const Profile = () => {
         return;
       }
 
+      // Payload aligned with updated backend controller
       const response = await dashboardAPI.updateProfile({
         fullName: profile.fullName,
         mobileNumber: profile.mobileNumber,
@@ -86,9 +84,8 @@ const Profile = () => {
     }
   };
 
-  // NEW: HANDLE PASSWORD RESET (Logic to be completed tomorrow)
- const handlePasswordReset = async () => {
-    // 1. Basic Frontend Validation
+  // HANDLE PASSWORD RESET
+  const handlePasswordReset = async () => {
     if (!profile.oldPassword || !profile.password || !profile.confirmPassword) {
         toast({ title: "Required", description: "Please fill all password fields", variant: "destructive" });
         return;
@@ -99,7 +96,6 @@ const Profile = () => {
     }
     
     try {
-      // 2. Call the API
       const response = await dashboardAPI.changePassword({
         oldPassword: profile.oldPassword,
         newPassword: profile.password
@@ -107,7 +103,6 @@ const Profile = () => {
 
       if (response.success) {
         toast({ title: "Success", description: "Password changed! Use your new password next time." });
-        // 3. Clear the password fields for security
         setProfile(prev => ({ ...prev, oldPassword: "", password: "", confirmPassword: "" }));
       }
     } catch (error: any) {
@@ -158,7 +153,7 @@ const Profile = () => {
             {profile.course || "N/A"} • {profile.year || "N/A"}
           </p>
           
-          <div className="mt-6 pt-6 border-t border-gray-100/10">
+          <div className="mt-6 pt-6 border-t border-gray-100/10 text-left">
             <button onClick={handleLogout} className="w-full py-3 rounded-xl bg-red-500/10 text-red-500 font-medium hover:bg-red-500/20 transition-colors flex items-center justify-center gap-2">
               <LogOut size={16} /> Logout
             </button>
@@ -166,7 +161,7 @@ const Profile = () => {
         </div>
 
         {/* Profile Details Form */}
-        <div className={`lg:col-span-2 p-6 rounded-2xl shadow-md ${getCardClasses()}`}>
+        <div className={`lg:col-span-2 p-6 rounded-2xl shadow-md ${getCardClasses()} text-left`}>
           <h3 className="text-lg font-semibold mb-6">Update Personal Information</h3>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -241,10 +236,8 @@ const Profile = () => {
             </button>
           </div>
 
-          {/* Divider */}
           <div className="my-8 border-t border-gray-100/10" />
 
-          {/* Reset Password Section */}
           <h3 className="text-lg font-semibold mb-6 text-red-500">Security: Reset Password</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>

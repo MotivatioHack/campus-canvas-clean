@@ -5,6 +5,7 @@ interface AvatarProps {
   size?: 'sm' | 'md' | 'lg';
   glowColor?: 'cyan' | 'purple' | 'pink' | 'green';
   className?: string;
+  url?: string;
 }
 
 const sizes = {
@@ -20,17 +21,19 @@ const colors = {
   green: 'bg-gradient-to-br from-neon-green/20 to-slate-900/60 text-neon-green border-2 border-neon-green/50 shadow-[0_0_15px_rgba(57,255,20,0.3),inset_0_0_10px_rgba(57,255,20,0.1)]',
 };
 
-export function NeonAvatar({ initials, size = 'md', glowColor = 'cyan', className }: AvatarProps) {
+export function NeonAvatar({ initials, glowColor = 'cyan', size = 'md', url }: AvatarProps) {
   return (
-    <div
-      className={cn(
-        'rounded-full flex items-center justify-center font-bold transition-all duration-300 hover:scale-110',
-        sizes[size],
-        colors[glowColor],
-        className
+    <div className={`relative rounded-full border-2 border-neon-${glowColor} ...`}>
+      {url ? (
+        <img 
+          src={url} 
+          alt={initials} 
+          className="w-full h-full rounded-full object-cover" 
+          onError={(e) => (e.currentTarget.style.display = 'none')} // Fallback if URL fails
+        />
+      ) : (
+        <span className="font-bold">{initials}</span>
       )}
-    >
-      {initials}
     </div>
   );
 }

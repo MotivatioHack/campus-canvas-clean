@@ -28,15 +28,13 @@ const menuItems = [
   { id: 'faculty', label: 'Faculty', icon: Users, path: '/dashboard/admin/faculty' },
   { id: 'complaints', label: 'Complaints', icon: MessageSquareWarning, path: '/dashboard/admin/complaints' },
   { id: 'helpdesk', label: 'Helpdesk', icon: HeadphonesIcon, path: '/dashboard/admin/helpdesk' },
-  { id: 'hostel', label: 'Hostel', icon: Building2, path: '/dashboard/admin/hostel' },
   { id: 'lost-found', label: 'Lost & Found', icon: Search, path: '/dashboard/admin/lost-found' },
   { id: 'events', label: 'Events', icon: Calendar, path: '/dashboard/admin/events' },
   { id: 'clubs', label: 'Clubs', icon: Users2, path: '/dashboard/admin/clubs' },
   { id: 'polls', label: 'Polls', icon: Vote, path: '/dashboard/admin/polls' },
   { id: 'placement', label: 'Placement', icon: Briefcase, path: '/dashboard/admin/placement' },
   { id: 'notices', label: 'Notices', icon: Bell, path: '/dashboard/admin/notices' },
-  { id: 'reports', label: 'Reports', icon: BarChart3, path: '/dashboard/admin/reports' },
-  { id: 'profile', label: 'Profile', icon: UserCircle, path: '/dashboard/admin/profile' },
+{ id: 'profile', label: 'Profile', icon: UserCircle, path: '/dashboard/admin/profile' },
 ];
 
 interface SidebarProps {

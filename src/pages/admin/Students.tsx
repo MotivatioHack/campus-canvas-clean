@@ -1,489 +1,268 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Plus,
   Search,
-  Filter,
-  MoreVertical,
   Mail,
   Phone,
-  Shield,
-  ShieldOff,
   Eye,
-  Edit,
-  Trash2,
   X,
-  FileText,
+  AlertTriangle,
 } from 'lucide-react';
 import { NeonCard } from '@/components/ui/NeonCard';
 import { GlowButton } from '@/components/ui/GlowButton';
-import { GlowInput } from '@/components/ui/GlowInput';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { NeonTable } from '@/components/ui/NeonTable';
 import { NeonAvatar } from '@/components/ui/NeonAvatar';
-import { students, Student, departments, complaints } from '@/data/admin/dummyData';
+import { PriorityChip } from '@/components/ui/PriorityChip';
+import { getStudents, getStudentComplaints } from '@/modules/admin/services/studentService';
 
 export function StudentsPage() {
-  const [studentList, setStudentList] = useState<Student[]>(students);
+  const [studentList, setStudentList] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [selectedStudent, setSelectedStudent] = useState<any>(null);
   const [showModal, setShowModal] = useState(false);
-  const [showAddModal, setShowAddModal] = useState(false);
   const [showComplaintsModal, setShowComplaintsModal] = useState(false);
-  const [newStudent, setNewStudent] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    enrollmentNo: '',
-    department: 'Computer Science',
-    semester: '1',
-  });
+  const [studentComplaints, setStudentComplaints] = useState<any[]>([]);
+
+  useEffect(() => {
+    loadStudents();
+  }, []);
+
+  const loadStudents = async () => {
+    try {
+      const res = await getStudents();
+      if (res && res.success && Array.isArray(res.data)) {
+        setStudentList(res.data);
+      } else if (Array.isArray(res)) {
+        setStudentList(res);
+      }
+    } catch (err) {
+      console.error("Failed to load students:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredStudents = studentList.filter(
     (s) =>
-      s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      s.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      s.enrollmentNo.toLowerCase().includes(searchQuery.toLowerCase())
+      (s.name?.toLowerCase() || "").includes(searchQuery.toLowerCase()) ||
+      (s.email?.toLowerCase() || "").includes(searchQuery.toLowerCase()) ||
+      (s.enrollmentNo?.toLowerCase() || "").includes(searchQuery.toLowerCase())
   );
 
-  const toggleStatus = (id: string) => {
-    setStudentList((prev) =>
-      prev.map((s) =>
-        s.id === id ? { ...s, status: s.status === 'active' ? 'blocked' : 'active' } : s
-      )
-    );
-  };
-
-  const viewStudent = (student: Student) => {
+  const viewStudent = (student: any) => {
     setSelectedStudent(student);
     setShowModal(true);
   };
 
-  const viewComplaints = (student: Student) => {
+  const viewComplaints = async (student: any) => {
     setSelectedStudent(student);
-    setShowComplaintsModal(true);
+    try {
+      const res = await getStudentComplaints(student.id);
+      if (res && res.success) {
+        setStudentComplaints(res.data);
+      } else if (Array.isArray(res)) {
+        setStudentComplaints(res);
+      }
+      setShowComplaintsModal(true);
+    } catch (err) {
+      console.error("Failed to load complaints:", err);
+    }
   };
-
-  const handleAddStudent = () => {
-    if (!newStudent.name || !newStudent.email) return;
-    
-    const student: Student = {
-      id: `STU${Date.now()}`,
-      name: newStudent.name,
-      email: newStudent.email,
-      department: newStudent.department,
-      semester: parseInt(newStudent.semester),
-      enrollmentNo: newStudent.enrollmentNo || `EN${Date.now()}`,
-      phone: newStudent.phone,
-      avatar: newStudent.name.split(' ').map(n => n[0]).join('').substring(0, 2),
-      status: 'active',
-      complaintsCount: 0,
-      joinedDate: new Date().toISOString().split('T')[0],
-    };
-    
-    setStudentList((prev) => [student, ...prev]);
-    setShowAddModal(false);
-    setNewStudent({ name: '', email: '', phone: '', enrollmentNo: '', department: 'Computer Science', semester: '1' });
-  };
-
-  // Get complaints for selected student
-  const studentComplaints = selectedStudent 
-    ? complaints.filter(c => c.studentId === selectedStudent.id || c.studentName === selectedStudent.name)
-    : [];
 
   const columns = [
     {
       key: 'name',
       header: 'Student',
-      render: (student: Student) => (
+      render: (student: any) => (
         <div className="flex items-center gap-3">
           <NeonAvatar
-            initials={student.avatar}
+            initials={student.name?.charAt(0) || 'S'}
             glowColor={student.status === 'active' ? 'cyan' : 'pink'}
             size="sm"
           />
           <div>
-            <p className="font-medium text-foreground">{student.name}</p>
-            <p className="text-xs text-muted-foreground">{student.enrollmentNo}</p>
+            <p className="font-medium text-white">{student.name}</p>
+            <p className="text-xs text-white/60">{student.enrollmentNo || 'N/A'}</p>
           </div>
         </div>
       ),
     },
-    { key: 'email', header: 'Email' },
-    { key: 'department', header: 'Department' },
-    { key: 'semester', header: 'Semester' },
+    // FIX: Added explicit render functions with text-white classes for visibility
+    { 
+      key: 'email', 
+      header: 'Email',
+      render: (student: any) => (
+        <span className="text-white text-sm">{student.email}</span>
+      )
+    },
+    { 
+      key: 'department', 
+      header: 'Department', 
+      render: (student: any) => (
+        <span className="text-white text-sm">{student.department || 'Unassigned'}</span>
+      )
+    },
+    { 
+      key: 'semester', 
+      header: 'Year/Sem', 
+      render: (student: any) => (
+        <span className="text-white text-sm">{student.semester || 'N/A'}</span>
+      )
+    },
     {
       key: 'complaintsCount',
       header: 'Complaints',
-      render: (s: Student) => (
-        <span className={s.complaintsCount > 5 ? 'text-destructive' : 'text-foreground'}>
-          {s.complaintsCount}
+      render: (s: any) => (
+        <span className={(s.complaintsCount || 0) > 5 ? 'text-destructive font-bold' : 'text-white'}>
+          {s.complaintsCount || 0}
         </span>
       ),
     },
     {
       key: 'status',
       header: 'Status',
-      render: (s: Student) => <StatusBadge status={s.status} />,
+      render: (s: any) => <StatusBadge status={s.status || 'active'} />,
     },
     {
       key: 'actions',
       header: 'Actions',
-      render: (student: Student) => (
-        <div className="flex items-center gap-2">
-          <button
-            onClick={(e) => { e.stopPropagation(); viewStudent(student); }}
-            className="p-1.5 rounded-lg hover:bg-neon-cyan/10 text-muted-foreground hover:text-neon-cyan transition-colors"
-          >
-            <Eye className="w-4 h-4" />
-          </button>
-          <button
-            onClick={(e) => { e.stopPropagation(); toggleStatus(student.id); }}
-            className={`p-1.5 rounded-lg transition-colors ${
-              student.status === 'active'
-                ? 'hover:bg-destructive/10 text-muted-foreground hover:text-destructive'
-                : 'hover:bg-neon-green/10 text-muted-foreground hover:text-neon-green'
-            }`}
-          >
-            {student.status === 'active' ? (
-              <ShieldOff className="w-4 h-4" />
-            ) : (
-              <Shield className="w-4 h-4" />
-            )}
-          </button>
-        </div>
+      render: (student: any) => (
+        <button
+          onClick={(e) => { e.stopPropagation(); viewStudent(student); }}
+          className="p-1.5 rounded-lg hover:bg-neon-cyan/10 text-white hover:text-neon-cyan transition-colors"
+        >
+          <Eye className="w-4 h-4" />
+        </button>
       ),
     },
   ];
 
+  if (loading) return (
+    <div className="h-[60vh] flex flex-col items-center justify-center gap-4">
+      <div className="w-10 h-10 border-4 border-neon-cyan border-t-transparent rounded-full animate-spin"></div>
+      <p className="font-orbitron text-neon-cyan animate-pulse">Accessing Student Directory...</p>
+    </div>
+  );
+
   return (
     <div className="space-y-6">
-      {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         className="flex flex-col md:flex-row md:items-center md:justify-between gap-4"
       >
         <div>
-          <h1 className="text-3xl font-bold font-orbitron gradient-text-aurora">
-            Student Management
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Manage {studentList.length} registered students
-          </p>
+          <h1 className="text-3xl font-bold font-orbitron gradient-text-aurora">Student Management</h1>
+          <p className="text-muted-foreground mt-1">Manage {studentList.length} registered students</p>
         </div>
-        <GlowButton variant="gradient" icon={<Plus className="w-4 h-4" />} onClick={() => setShowAddModal(true)}>
-          Add Student
-        </GlowButton>
       </motion.div>
 
-      {/* Search and Filters */}
       <NeonCard glowColor="cyan" hover={false}>
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-            <input
-              type="text"
-              placeholder="Search students by name, email, or enrollment..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 bg-background/50 border border-border rounded-lg 
-                       text-foreground placeholder:text-muted-foreground
-                       focus:outline-none focus:border-neon-cyan focus:ring-2 focus:ring-neon-cyan/20
-                       transition-all duration-300"
-            />
-          </div>
-          <GlowButton variant="purple" icon={<Filter className="w-4 h-4" />}>
-            Filters
-          </GlowButton>
+        <div className="flex-1 relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Search students by name, email, or PRN..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-10 pr-4 py-3 bg-background/50 border border-border rounded-lg text-white focus:outline-none focus:border-neon-cyan transition-all"
+          />
         </div>
       </NeonCard>
 
-      {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
           { label: 'Total Students', value: studentList.length, color: 'cyan' },
-          { label: 'Active', value: studentList.filter((s) => s.status === 'active').length, color: 'green' },
+          { label: 'Active', value: studentList.filter((s) => (s.status || 'active') === 'active').length, color: 'green' },
           { label: 'Blocked', value: studentList.filter((s) => s.status === 'blocked').length, color: 'pink' },
-          { label: 'Avg Complaints', value: (studentList.reduce((a, b) => a + b.complaintsCount, 0) / studentList.length).toFixed(1), color: 'purple' },
+          { label: 'Global Complaints', value: studentList.reduce((a, b) => a + (b.complaintsCount || 0), 0), color: 'purple' },
         ].map((stat, i) => (
-          <motion.div
-            key={stat.label}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.1 }}
-            className={`p-4 rounded-xl glass border border-border/50 text-center`}
-          >
-            <p className={`text-2xl font-bold font-orbitron text-neon-${stat.color}`}>
-              {stat.value}
-            </p>
+          <motion.div key={stat.label} className="p-4 rounded-xl glass border border-border/50 text-center">
+            <p className={`text-2xl font-bold font-orbitron text-neon-${stat.color}`}>{stat.value}</p>
             <p className="text-sm text-muted-foreground">{stat.label}</p>
           </motion.div>
         ))}
       </div>
 
-      {/* Table */}
-      <NeonTable data={filteredStudents} columns={columns} onRowClick={viewStudent} />
+      <div className="admin-students-table-scope">
+        <NeonTable data={filteredStudents} columns={columns} onRowClick={viewStudent} />
+      </div>
 
-      {/* Student Detail Modal */}
+      <style>{`
+        .admin-students-table-scope table thead th {
+            color: #00f2ff !important;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+      `}</style>
+
       <AnimatePresence>
         {showModal && selectedStudent && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm"
-            onClick={() => setShowModal(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-lg glass rounded-2xl neon-border overflow-hidden"
-            >
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm" onClick={() => setShowModal(false)}>
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} onClick={(e) => e.stopPropagation()} className="w-full max-w-lg glass rounded-2xl neon-border overflow-hidden">
               <div className="p-6 border-b border-border/50 flex items-center justify-between">
-                <h2 className="text-xl font-bold font-orbitron text-foreground">Student Profile</h2>
-                <button
-                  onClick={() => setShowModal(false)}
-                  className="p-2 rounded-lg hover:bg-muted/50 text-muted-foreground"
-                >
-                  <X className="w-5 h-5" />
-                </button>
+                <h2 className="text-xl font-bold font-orbitron text-white">Student Profile</h2>
+                <button onClick={() => setShowModal(false)} className="text-white/60 hover:text-white transition-colors"><X /></button>
               </div>
               <div className="p-6 space-y-6">
                 <div className="flex items-center gap-4">
-                  <NeonAvatar
-                    initials={selectedStudent.avatar}
-                    glowColor="cyan"
-                    size="lg"
-                  />
+                  <NeonAvatar initials={selectedStudent.name?.charAt(0)} glowColor="cyan" size="lg" />
                   <div>
-                    <h3 className="text-lg font-semibold text-foreground">{selectedStudent.name}</h3>
-                    <p className="text-sm text-muted-foreground">{selectedStudent.enrollmentNo}</p>
-                    <StatusBadge status={selectedStudent.status} className="mt-2" />
+                    <h3 className="text-lg font-semibold text-white">{selectedStudent.name}</h3>
+                    <p className="text-sm text-white/60">{selectedStudent.enrollmentNo || 'No PRN set'}</p>
                   </div>
                 </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <p className="text-xs text-muted-foreground uppercase tracking-wider">Email</p>
-                    <p className="text-sm text-foreground flex items-center gap-2">
-                      <Mail className="w-4 h-4 text-neon-cyan" />
-                      {selectedStudent.email}
-                    </p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-xs text-muted-foreground uppercase tracking-wider">Phone</p>
-                    <p className="text-sm text-foreground flex items-center gap-2">
-                      <Phone className="w-4 h-4 text-neon-purple" />
-                      {selectedStudent.phone}
-                    </p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-xs text-muted-foreground uppercase tracking-wider">Department</p>
-                    <p className="text-sm text-foreground">{selectedStudent.department}</p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-xs text-muted-foreground uppercase tracking-wider">Semester</p>
-                    <p className="text-sm text-foreground">{selectedStudent.semester}</p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-xs text-muted-foreground uppercase tracking-wider">Joined</p>
-                    <p className="text-sm text-foreground">{selectedStudent.joinedDate}</p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-xs text-muted-foreground uppercase tracking-wider">Complaints</p>
-                    <p className="text-sm text-foreground">{selectedStudent.complaintsCount} filed</p>
-                  </div>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div><p className="text-white/40">Email</p><p className="truncate text-white">{selectedStudent.email}</p></div>
+                  <div><p className="text-white/40">Phone</p><p className="text-white">{selectedStudent.phone || 'N/A'}</p></div>
+                  <div><p className="text-white/40">Dept</p><p className="text-white">{selectedStudent.department || 'N/A'}</p></div>
+                  <div><p className="text-white/40">Year</p><p className="text-white">{selectedStudent.semester || 'N/A'}</p></div>
                 </div>
-
-                <div className="flex gap-3">
-                  <GlowButton 
-                    variant="cyan" 
-                    className="flex-1"
-                    icon={<FileText className="w-4 h-4" />}
-                    onClick={() => {
-                      setShowModal(false);
-                      viewComplaints(selectedStudent);
-                    }}
-                  >
-                    View Complaints
-                  </GlowButton>
-                  <GlowButton
-                    variant={selectedStudent.status === 'active' ? 'pink' : 'green'}
-                    onClick={() => {
-                      toggleStatus(selectedStudent.id);
-                      setShowModal(false);
-                    }}
-                  >
-                    {selectedStudent.status === 'active' ? 'Block' : 'Unblock'}
-                  </GlowButton>
-                </div>
+                <GlowButton variant="cyan" fullWidth onClick={() => { setShowModal(false); viewComplaints(selectedStudent); }}>
+                  View History
+                </GlowButton>
               </div>
             </motion.div>
-          </motion.div>
+          </div>
         )}
       </AnimatePresence>
 
-      {/* Add Student Modal */}
-      <AnimatePresence>
-        {showAddModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm"
-            onClick={() => setShowAddModal(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-lg glass rounded-2xl neon-border-purple overflow-hidden"
-            >
-              <div className="p-6 border-b border-border/50 flex items-center justify-between">
-                <h2 className="text-xl font-bold font-orbitron text-foreground">Add New Student</h2>
-                <button
-                  onClick={() => setShowAddModal(false)}
-                  className="p-2 rounded-lg hover:bg-muted/50 text-muted-foreground"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              <div className="p-6 space-y-4">
-                <GlowInput 
-                  label="Full Name" 
-                  placeholder="Enter student name"
-                  value={newStudent.name}
-                  onChange={(e) => setNewStudent({...newStudent, name: e.target.value})}
-                />
-                <GlowInput 
-                  label="Email" 
-                  type="email" 
-                  placeholder="student@college.edu"
-                  value={newStudent.email}
-                  onChange={(e) => setNewStudent({...newStudent, email: e.target.value})}
-                />
-                <GlowInput 
-                  label="Phone" 
-                  placeholder="+1234567890"
-                  value={newStudent.phone}
-                  onChange={(e) => setNewStudent({...newStudent, phone: e.target.value})}
-                />
-                <GlowInput 
-                  label="Enrollment No" 
-                  placeholder="CS2024XXX"
-                  value={newStudent.enrollmentNo}
-                  onChange={(e) => setNewStudent({...newStudent, enrollmentNo: e.target.value})}
-                />
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-muted-foreground">Department</label>
-                    <select 
-                      value={newStudent.department}
-                      onChange={(e) => setNewStudent({...newStudent, department: e.target.value})}
-                      className="w-full px-4 py-3 rounded-lg bg-background/50 border border-border text-foreground focus:outline-none focus:border-neon-cyan"
-                    >
-                      {departments.map((d) => (
-                        <option key={d} value={d}>{d}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <GlowInput 
-                    label="Semester" 
-                    type="number" 
-                    placeholder="1-8"
-                    value={newStudent.semester}
-                    onChange={(e) => setNewStudent({...newStudent, semester: e.target.value})}
-                  />
-                </div>
-                <div className="flex gap-3 pt-4">
-                  <GlowButton variant="gradient" className="flex-1" onClick={handleAddStudent}>
-                    Add Student
-                  </GlowButton>
-                  <GlowButton variant="purple" onClick={() => setShowAddModal(false)}>
-                    Cancel
-                  </GlowButton>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Student Complaints Modal */}
       <AnimatePresence>
         {showComplaintsModal && selectedStudent && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm"
-            onClick={() => setShowComplaintsModal(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-2xl glass rounded-2xl neon-border overflow-hidden"
-            >
-              <div className="p-6 border-b border-border/50 flex items-center justify-between">
-                <div>
-                  <h2 className="text-xl font-bold font-orbitron text-foreground">Complaint History</h2>
-                  <p className="text-sm text-muted-foreground">{selectedStudent.name}</p>
-                </div>
-                <button
-                  onClick={() => setShowComplaintsModal(false)}
-                  className="p-2 rounded-lg hover:bg-muted/50 text-muted-foreground"
-                >
-                  <X className="w-5 h-5" />
-                </button>
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm" onClick={() => setShowComplaintsModal(false)}>
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} onClick={(e) => e.stopPropagation()} className="w-full max-w-2xl glass rounded-2xl neon-border overflow-hidden">
+              <div className="p-6 border-b border-border/50 flex justify-between items-center">
+                <h2 className="text-xl font-bold font-orbitron text-white">Complaint History: {selectedStudent.name}</h2>
+                <button onClick={() => setShowComplaintsModal(false)}><X /></button>
               </div>
-              <div className="p-6 max-h-[60vh] overflow-y-auto">
+              <div className="p-6 max-h-[60vh] overflow-y-auto space-y-4">
                 {studentComplaints.length === 0 ? (
-                  <div className="text-center py-12">
-                    <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                    <p className="text-muted-foreground">No complaints found for this student</p>
+                  <div className="text-center py-8">
+                    <p className="text-white/40 italic">No complaints filed by this student.</p>
                   </div>
                 ) : (
-                  <div className="space-y-4">
-                    {studentComplaints.map((complaint, i) => (
-                      <motion.div
-                        key={complaint.id}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: i * 0.1 }}
-                        className="p-4 rounded-lg bg-muted/30 border border-border/50"
-                      >
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <span className="text-xs text-neon-cyan font-mono">{complaint.id}</span>
-                            <h4 className="font-medium text-foreground mt-1">{complaint.title}</h4>
-                            <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{complaint.description}</p>
-                          </div>
-                          <StatusBadge status={complaint.status} />
+                  studentComplaints.map(c => (
+                    <div key={c.id} className="p-4 rounded-lg bg-white/5 border border-white/10">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h4 className="font-medium text-white">{c.title}</h4>
+                          <p className="text-xs text-white/60 mt-1 line-clamp-2">{c.description}</p>
                         </div>
-                        <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
-                          <span>{complaint.category}</span>
-                          <span>•</span>
-                          <span>{new Date(complaint.createdAt).toLocaleDateString()}</span>
-                          {complaint.facultyName && (
-                            <>
-                              <span>•</span>
-                              <span className="text-neon-purple">Assigned: {complaint.facultyName}</span>
-                            </>
-                          )}
-                        </div>
-                      </motion.div>
-                    ))}
-                  </div>
+                        <StatusBadge status={c.status} />
+                      </div>
+                      <div className="flex justify-between items-center mt-3 pt-3 border-t border-white/10">
+                         <PriorityChip priority={c.priority?.toLowerCase() || 'medium'} />
+                         <p className="text-[10px] text-white/40">{new Date(c.created_at).toLocaleDateString()}</p>
+                      </div>
+                    </div>
+                  ))
                 )}
               </div>
             </motion.div>
-          </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </div>

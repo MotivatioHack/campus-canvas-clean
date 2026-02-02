@@ -17,17 +17,18 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-interface Complaint {
+// FIXED INTERFACE: Synchronized with backend SQL aliases and flexible types
+export interface Complaint {
   id: string;
   studentName: string;
   department: string;
   type: string;
-  priority: "Low" | "Medium" | "High";
+  priority: string;
   date: string;
-  status: "Pending" | "In Progress" | "Resolved" | "Rejected";
+  status: string;
   description?: string;
-  faculty_reply?: string;
-  internal_notes?: string;
+  facultyResponse?: string; // Maps from DB faculty_reply
+  internalNote?: string;    // Maps from DB internal_notes
 }
 
 interface ComplaintDetailModalProps {
@@ -37,10 +38,13 @@ interface ComplaintDetailModalProps {
   onSubmit: (data: { status: string; response: string; note: string }) => void;
 }
 
-const priorityColors = {
+// DEFENSIVE COLORS: Added fallbacks for Critical and unknown types
+const priorityColors: any = {
   Low: { bg: "#052E16", text: "#22C55E", border: "#16A34A" },
   Medium: { bg: "#3B2F0B", text: "#F59E0B", border: "#D97706" },
   High: { bg: "#3F0D0D", text: "#EF4444", border: "#DC2626" },
+  Critical: { bg: "#450A0A", text: "#F87171", border: "#991B1B" },
+  unknown: { bg: "#1F2937", text: "#9CA3AF", border: "#374151" }
 };
 
 const ComplaintDetailModal = ({ complaint, isOpen, onClose, onSubmit }: ComplaintDetailModalProps) => {
@@ -48,26 +52,29 @@ const ComplaintDetailModal = ({ complaint, isOpen, onClose, onSubmit }: Complain
   const [facultyResponse, setFacultyResponse] = useState("");
   const [internalNote, setInternalNote] = useState("");
 
-  // Sync internal state when a new complaint is opened
+  // Sync internal state when a new complaint is opened to ensure data persistence
   useEffect(() => {
     if (complaint) {
-      setStatus(complaint.status);
-      setFacultyResponse(complaint.faculty_reply || "");
-      setInternalNote(complaint.internal_notes || "");
+      setStatus(complaint.status || "Pending");
+      setFacultyResponse(complaint.facultyResponse || "");
+      setInternalNote(complaint.internalNote || "");
     }
-  }, [complaint]);
+  }, [complaint, isOpen]);
 
   if (!complaint) return null;
 
   const handleSubmit = () => {
-    // Pass the captured state back to the parent component
+    // Pass the captured state back to the parent component handleActionSubmit
     onSubmit({
       status,
       response: facultyResponse,
       note: internalNote
     });
-    onClose();
+    // Modal closure handled by parent after successful API response is best, 
+    // but keeping onClose here for immediate UI feedback.
   };
+
+  const pStyle = priorityColors[complaint.priority] || priorityColors.unknown;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -80,9 +87,9 @@ const ComplaintDetailModal = ({ complaint, isOpen, onClose, onSubmit }: Complain
             <Badge 
               variant="outline" 
               style={{
-                backgroundColor: priorityColors[complaint.priority].bg,
-                color: priorityColors[complaint.priority].text,
-                borderColor: priorityColors[complaint.priority].border,
+                backgroundColor: pStyle.bg,
+                color: pStyle.text,
+                borderColor: pStyle.border,
               }}
             >
               {complaint.priority} Priority
@@ -113,14 +120,7 @@ const ComplaintDetailModal = ({ complaint, isOpen, onClose, onSubmit }: Complain
                 <div className="p-2 rounded-lg bg-green-100"><Mail className="w-4 h-4 text-green-600" /></div>
                 <div>
                   <p className="text-sm text-gray-500">Email</p>
-                  <p className="font-medium text-gray-800">student@college.edu</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-yellow-100"><Phone className="w-4 h-4 text-yellow-600" /></div>
-                <div>
-                  <p className="text-sm text-gray-500">Contact</p>
-                  <p className="font-medium text-gray-800">+91 98765 43210</p>
+                  <p className="font-medium text-gray-800">Verified via System</p>
                 </div>
               </div>
             </div>
@@ -144,13 +144,6 @@ const ComplaintDetailModal = ({ complaint, isOpen, onClose, onSubmit }: Complain
                   "{complaint.description || 'No description provided.'}"
                 </div>
               </div>
-              <div>
-                <p className="text-sm text-gray-500 mb-2">Attachments</p>
-                <div className="flex gap-2">
-                  <div className="p-3 rounded-lg bg-gray-50 flex items-center gap-2 border"><Image className="w-4 h-4 text-gray-500" /><span className="text-sm text-gray-700">photo1.jpg</span></div>
-                  <div className="p-3 rounded-lg bg-gray-50 flex items-center gap-2 border"><FileText className="w-4 h-4 text-gray-500" /><span className="text-sm text-gray-700">report.pdf</span></div>
-                </div>
-              </div>
             </div>
           </div>
 
@@ -165,15 +158,14 @@ const ComplaintDetailModal = ({ complaint, isOpen, onClose, onSubmit }: Complain
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-white border-gray-200">
-                    <SelectItem value="Pending">Pending</SelectItem>
-                   
+                    <SelectItem value="In Progress">In Progress</SelectItem>
                     <SelectItem value="Resolved">Resolved</SelectItem>
-                    
+                    <SelectItem value="Rejected">Rejected</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <p className="text-sm text-gray-500 mb-2">Faculty Response</p>
+                <p className="text-sm text-gray-500 mb-2">Faculty Response (Visible to Student)</p>
                 <Textarea
                   placeholder="Enter your response to the student..."
                   value={facultyResponse}
@@ -182,7 +174,7 @@ const ComplaintDetailModal = ({ complaint, isOpen, onClose, onSubmit }: Complain
                 />
               </div>
               <div>
-                <p className="text-sm text-gray-500 mb-2">Internal Note (Faculty/Admin only)</p>
+                <p className="text-sm text-gray-500 mb-2">Internal Note (Admin only)</p>
                 <Textarea
                   placeholder="Add internal notes..."
                   value={internalNote}

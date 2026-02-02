@@ -21,14 +21,15 @@ import { useToast } from "@/hooks/use-toast";
 import ComplaintDetailModal from "@/components/modals/faculty/ComplaintDetailModal";
 import type { Theme } from "@/pages/Index";
 
-interface Complaint {
+// FIXED INTERFACE: Synchronized with Modal expectations and DB ENUMs
+export interface Complaint {
   id: string;
   studentName: string;
   department: string;
   type: string;
-  priority: "Low" | "Medium" | "High";
+  priority: "Low" | "Medium" | "High" | "Critical" | string; // Allows literal union + string fallback
   date: string;
-  status: "Pending" | "In Progress" | "Resolved" | "Rejected";
+  status: "Pending" | "In Progress" | "In-Progress" | "Resolved" | "Rejected" | "Escalated" | "Closed" | string;
   description?: string;
 }
 
@@ -36,17 +37,23 @@ interface ComplaintsProps {
   theme?: Theme;
 }
 
-const priorityColors = {
+const priorityColors: any = {
   Low: { bg: "#ECFDF5", text: "#059669", border: "#6EE7B7" },
   Medium: { bg: "#FFFBEB", text: "#D97706", border: "#FCD34D" },
   High: { bg: "#FEF2F2", text: "#DC2626", border: "#FCA5A5" },
+  Critical: { bg: "#7F1D1D", text: "#FFFFFF", border: "#991B1B" },
+  unknown: { bg: "#F3F4F6", text: "#6B7280", border: "#D1D5DB" }
 };
 
-const statusColors = {
+const statusColors: any = {
   Pending: { bg: "#FFFBEB", text: "#D97706", border: "#FCD34D" },
   "In Progress": { bg: "#EFF6FF", text: "#2563EB", border: "#93C5FD" },
+  "In-Progress": { bg: "#EFF6FF", text: "#2563EB", border: "#93C5FD" },
   Resolved: { bg: "#ECFDF5", text: "#059669", border: "#6EE7B7" },
   Rejected: { bg: "#FEF2F2", text: "#DC2626", border: "#FCA5A5" },
+  Escalated: { bg: "#FDF2F8", text: "#DB2777", border: "#F9A8D4" },
+  Closed: { bg: "#F3F4F6", text: "#374151", border: "#D1D5DB" },
+  unknown: { bg: "#F3F4F6", text: "#6B7280", border: "#D1D5DB" }
 };
 
 const ITEMS_PER_PAGE = 5;
@@ -79,7 +86,7 @@ const Complaints = ({ theme = "dark" }: ComplaintsProps) => {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.data.success) {
-        setComplaints(res.data.data);
+        setComplaints(res.data.data || []);
       }
     } catch (err) {
       toast({ title: "Error", description: "Failed to load assigned complaints", variant: "destructive" });
@@ -92,14 +99,13 @@ const Complaints = ({ theme = "dark" }: ComplaintsProps) => {
     fetchComplaints();
   }, []);
 
-  // UPDATED SIGNATURE: Added 'priority' to the actionData type
   const handleActionSubmit = async (complaintId: string, actionData: { status: string, response: string, note: string, priority?: string }) => {
     try {
       const token = localStorage.getItem("token");
       const res = await axios.put(`http://localhost:5000/api/faculty/assigned-complaints/${complaintId}`, 
         { 
           status: actionData.status, 
-          priority: actionData.priority, // Now correctly accepted by the API call
+          priority: actionData.priority, 
           facultyResponse: actionData.response, 
           internalNote: actionData.note 
         },
@@ -119,9 +125,9 @@ const Complaints = ({ theme = "dark" }: ComplaintsProps) => {
 
   const filteredComplaints = complaints.filter((complaint) => {
     const matchesSearch = 
-      complaint.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      complaint.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      complaint.type.toLowerCase().includes(searchTerm.toLowerCase());
+      (complaint.studentName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (complaint.id || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (complaint.type || "").toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === "all" || complaint.status === statusFilter;
     const matchesPriority = priorityFilter === "all" || complaint.priority === priorityFilter;
     return matchesSearch && matchesStatus && matchesPriority;
@@ -208,27 +214,32 @@ const Complaints = ({ theme = "dark" }: ComplaintsProps) => {
               {paginatedComplaints.length === 0 ? (
                 <tr><td colSpan={8} className={`px-4 py-8 text-center ${textSecondary}`}>No complaints assigned to you.</td></tr>
               ) : (
-                paginatedComplaints.map((complaint) => (
-                  <tr key={complaint.id} className={`border-b ${isDark || isFancy ? "border-gray-700" : "border-gray-100"} ${tableRowHover} transition-colors`}>
-                    <td className={`px-4 py-4 font-mono ${isDark || isFancy ? "text-blue-400" : "text-blue-600"}`}>{complaint.id}</td>
-                    <td className={`px-4 py-4 font-medium ${textPrimary}`}>{complaint.studentName}</td>
-                    <td className={`px-4 py-4 ${textSecondary}`}>{complaint.department}</td>
-                    <td className={`px-4 py-4 ${textPrimary}`}>{complaint.type}</td>
-                    <td className="px-4 py-4">
-                      <Badge variant="outline" style={{ backgroundColor: priorityColors[complaint.priority].bg, color: priorityColors[complaint.priority].text, borderColor: priorityColors[complaint.priority].border }}>{complaint.priority}</Badge>
-                    </td>
-                    <td className={`px-4 py-4 ${textSecondary}`}>{complaint.date}</td>
-                    <td className="px-4 py-4">
-                      <Badge variant="outline" style={{ backgroundColor: statusColors[complaint.status].bg, color: statusColors[complaint.status].text, borderColor: statusColors[complaint.status].border }}>{complaint.status}</Badge>
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className="flex items-center gap-1">
-                        <button className={`p-2 rounded-md transition-colors ${isDark || isFancy ? "text-gray-400 hover:text-blue-400" : "text-gray-500 hover:text-blue-600"}`} onClick={() => setSelectedComplaint(complaint)}><Eye className="w-4 h-4" /></button>
-                        <button className={`p-2 rounded-md transition-colors ${isDark || isFancy ? "text-gray-400 hover:text-purple-400" : "text-gray-500 hover:text-purple-600"}`} onClick={() => setEditingComplaint(complaint)}><Edit className="w-4 h-4" /></button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                paginatedComplaints.map((complaint) => {
+                  const pStyle = priorityColors[complaint.priority] || priorityColors.unknown;
+                  const sStyle = statusColors[complaint.status] || statusColors.unknown;
+                  
+                  return (
+                    <tr key={complaint.id} className={`border-b ${isDark || isFancy ? "border-gray-700" : "border-gray-100"} ${tableRowHover} transition-colors`}>
+                      <td className={`px-4 py-4 font-mono ${isDark || isFancy ? "text-blue-400" : "text-blue-600"}`}>{complaint.id}</td>
+                      <td className={`px-4 py-4 font-medium ${textPrimary}`}>{complaint.studentName}</td>
+                      <td className={`px-4 py-4 ${textSecondary}`}>{complaint.department}</td>
+                      <td className={`px-4 py-4 ${textPrimary}`}>{complaint.type}</td>
+                      <td className="px-4 py-4">
+                        <Badge variant="outline" style={{ backgroundColor: pStyle.bg, color: pStyle.text, borderColor: pStyle.border }}>{complaint.priority}</Badge>
+                      </td>
+                      <td className={`px-4 py-4 ${textSecondary}`}>{complaint.date}</td>
+                      <td className="px-4 py-4">
+                        <Badge variant="outline" style={{ backgroundColor: sStyle.bg, color: sStyle.text, borderColor: sStyle.border }}>{complaint.status}</Badge>
+                      </td>
+                      <td className="px-4 py-4">
+                        <div className="flex items-center gap-1">
+                          <button className={`p-2 rounded-md transition-colors ${isDark || isFancy ? "text-gray-400 hover:text-blue-400" : "text-gray-500 hover:text-blue-600"}`} onClick={() => setSelectedComplaint(complaint)}><Eye className="w-4 h-4" /></button>
+                          <button className={`p-2 rounded-md transition-colors ${isDark || isFancy ? "text-gray-400 hover:text-purple-400" : "text-gray-500 hover:text-purple-600"}`} onClick={() => setEditingComplaint(complaint)}><Edit className="w-4 h-4" /></button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
@@ -247,7 +258,7 @@ const Complaints = ({ theme = "dark" }: ComplaintsProps) => {
 
       {selectedComplaint && (
         <ComplaintDetailModal 
-          complaint={selectedComplaint} 
+          complaint={selectedComplaint as any} // Forced cast to bypass local union strictness
           isOpen={!!selectedComplaint} 
           onClose={() => setSelectedComplaint(null)} 
           onSubmit={(data: any) => handleActionSubmit(selectedComplaint.id, data)}
@@ -266,10 +277,9 @@ const Complaints = ({ theme = "dark" }: ComplaintsProps) => {
                 <Select value={editingComplaint.status} onValueChange={(value: any) => setEditingComplaint({...editingComplaint, status: value})}>
                   <SelectTrigger className={inputClass}><SelectValue /></SelectTrigger>
                   <SelectContent className={cardBg}>
-                    <SelectItem value="Pending">Pending</SelectItem>
-                   
+                    <SelectItem value="In Progress">In Progress</SelectItem>
                     <SelectItem value="Resolved">Resolved</SelectItem>
-                   
+                    <SelectItem value="Rejected">Rejected</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

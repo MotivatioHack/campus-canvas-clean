@@ -7,7 +7,29 @@ const generateComplaintId = () => {
     const random = Math.floor(Math.random() * 100).toString().padStart(2, '0');
     return `${prefix}${timestamp}${random}`;
 };
+const getStudentComplaints = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const [rows] = await db.execute(`
+            SELECT 
+                c.complaint_id as id,
+                c.subject as title,
+                c.status,
+                c.priority,
+                c.created_at as date,
+                f.full_name as assignedFaculty,
+                c.faculty_reply as feedback
+            FROM complaints c
+            LEFT JOIN users f ON c.assigned_to = f.id
+            WHERE c.user_id = ?
+            ORDER BY c.created_at DESC
+        `, [userId]);
 
+        res.json({ success: true, data: rows });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Failed to fetch complaints' });
+    }
+};
 // Create new complaint
 exports.createComplaint = async (req, res) => {
     // 1. Get a connection for the transaction

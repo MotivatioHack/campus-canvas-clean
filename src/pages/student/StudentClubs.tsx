@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import { Users, UserPlus, CheckCircle, LogOut, Loader2 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Users, UserPlus, CheckCircle, LogOut, Loader2, AlertCircle } from "lucide-react";
 import MainLayout from "@/components/layout/student/MainLayout";
 import TopNavbar from "@/components/layout/student/TopNavbar";
 import { toast } from "@/hooks/use-toast";
@@ -15,6 +15,7 @@ interface Club {
   joined: boolean;
   category: string;
   image: string;
+  status: string; // Added to track database status
 }
 
 const categoryColors: Record<string, string> = {
@@ -47,7 +48,8 @@ const Clubs = () => {
           members: item.members_count || 0,
           category: item.category || "Other",
           image: item.image_emoji || "🏢",
-          joined: item.is_member === 1 // Derived from our SQL JOIN
+          status: item.status || "active", // Syncing with DB status
+          joined: item.is_member === 1 
         }));
 
         setClubs(formattedClubs);
@@ -66,8 +68,18 @@ const Clubs = () => {
     fetchClubs();
   }, []);
 
-  // PHASE 2: Dynamic Join Logic
+  // PHASE 2: Dynamic Join Logic with Inactive Guard
   const handleJoin = async (clubId: string, clubName: string) => {
+    // Local guard to prevent API calls for inactive clubs
+    const targetClub = clubs.find(c => c.id === clubId);
+    if (targetClub?.status === 'inactive') {
+      return toast({
+        title: "Club Inactive",
+        description: "Registration for this club is currently closed by administration.",
+        variant: "destructive",
+      });
+    }
+
     try {
       await clubAPI.join(clubId);
 
@@ -82,7 +94,7 @@ const Clubs = () => {
     } catch (error: any) {
       toast({
         title: "Join Failed",
-        description: error.message || "Something went wrong.",
+        description: error.response?.data?.message || error.message || "Something went wrong.",
         variant: "destructive",
       });
     }
@@ -91,10 +103,8 @@ const Clubs = () => {
   // PHASE 4: Dynamic Exit Logic
   const handleLeave = async (clubId: string, clubName: string) => {
     try {
-      // 1. Hit the DELETE API
       await clubAPI.leave(clubId);
 
-      // 2. Update local state: remove joined status & decrease member count
       setClubs(prevClubs => prevClubs.map(club => 
         club.id === clubId ? { ...club, joined: false, members: Math.max(0, club.members - 1) } : club
       ));
@@ -120,7 +130,6 @@ const Clubs = () => {
     }
   };
 
-  // Derived state for the "My Clubs" preview section
   const myClubs = clubs.filter(c => c.joined);
 
   return (
@@ -134,7 +143,6 @@ const Clubs = () => {
         </div>
       ) : (
         <>
-          {/* PHASE 3: My Clubs Section */}
           {myClubs.length > 0 && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
@@ -169,7 +177,6 @@ const Clubs = () => {
             </motion.div>
           )}
 
-          {/* All Clubs Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {clubs.map((club, index) => (
               <motion.div
@@ -177,7 +184,7 @@ const Clubs = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, delay: index * 0.05 }}
-                className={`rounded-2xl overflow-hidden hover:shadow-card-hover transition-shadow flex flex-col ${getCardClasses()}`}
+                className={`rounded-2xl overflow-hidden hover:shadow-card-hover transition-shadow flex flex-col ${getCardClasses()} ${club.status === 'inactive' ? 'opacity-80' : ''}`}
               >
                 <div className="p-6 flex-1">
                   <div className="flex items-start justify-between mb-4">
@@ -186,15 +193,23 @@ const Clubs = () => {
                     }`}>
                       {club.image}
                     </div>
-                    <span
-                      className="px-3 py-1 rounded-full text-xs font-medium"
-                      style={{ 
-                        backgroundColor: `${categoryColors[club.category] || "#6b7280"}15`, 
-                        color: categoryColors[club.category] || "#6b7280" 
-                      }}
-                    >
-                      {club.category}
-                    </span>
+                    <div className="flex flex-col items-end gap-2">
+                      <span
+                        className="px-3 py-1 rounded-full text-xs font-medium"
+                        style={{ 
+                          backgroundColor: `${categoryColors[club.category] || "#6b7280"}15`, 
+                          color: categoryColors[club.category] || "#6b7280" 
+                        }}
+                      >
+                        {club.category}
+                      </span>
+                      {/* Inactive Status Flag */}
+                      {club.status === 'inactive' && (
+                        <span className="flex items-center gap-1 text-[10px] font-bold text-red-500 uppercase tracking-tight">
+                          <AlertCircle className="w-2.5 h-2.5" /> Inactive
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   <h3 className={`text-lg font-semibold mb-2 ${theme === "light" ? "text-[#1f2937]" : "text-white"}`}>
@@ -214,7 +229,6 @@ const Clubs = () => {
 
                 <div className="p-6 pt-0">
                   {club.joined ? (
-                    /* PHASE 2: GREEN MEMBER BUTTON (DISABLED) */
                     <button
                       disabled
                       className="w-full py-3 rounded-xl font-medium flex items-center justify-center gap-2 bg-green-500/10 text-green-500 cursor-default border border-green-500/20"
@@ -223,17 +237,25 @@ const Clubs = () => {
                       Member
                     </button>
                   ) : (
-                    /* PHASE 2: BLUE JOIN BUTTON */
                     <button
                       onClick={() => handleJoin(club.id, club.name)}
+                      disabled={club.status === 'inactive'} // Logical Guard
                       className={`w-full py-3 rounded-xl font-medium transition-colors flex items-center justify-center gap-2 ${
-                        theme === "fancy"
-                          ? "bg-gradient-to-r from-[#4f6fdc] to-[#9333ea] text-white"
-                          : "bg-[#4f6fdc] text-white hover:bg-[#4560c7]"
+                        club.status === 'inactive' 
+                          ? "bg-gray-500/20 text-gray-500 cursor-not-allowed grayscale" 
+                          : theme === "fancy"
+                            ? "bg-gradient-to-r from-[#4f6fdc] to-[#9333ea] text-white"
+                            : "bg-[#4f6fdc] text-white hover:bg-[#4560c7]"
                       }`}
                     >
-                      <UserPlus className="w-4 h-4" />
-                      Join Club
+                      {club.status === 'inactive' ? (
+                        <>Inactive</>
+                      ) : (
+                        <>
+                          <UserPlus className="w-4 h-4" />
+                          Join Club
+                        </>
+                      )}
                     </button>
                   )}
                 </div>

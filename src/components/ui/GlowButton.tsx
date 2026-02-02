@@ -11,6 +11,7 @@ interface GlowButtonProps {
   disabled?: boolean;
   type?: 'button' | 'submit' | 'reset';
   className?: string;
+  fullWidth?: boolean; // Added fullWidth property
 }
 
 const variants = {
@@ -36,17 +37,19 @@ export function GlowButton({
   disabled,
   type = 'button',
   className,
+  fullWidth = false, // Default value set to false
 }: GlowButtonProps) {
   return (
     <motion.button
       type={type}
       onClick={onClick}
       disabled={disabled}
-      whileHover={{ scale: 1.05 }}
-      whileTap={{ scale: 0.95 }}
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
       className={cn(
-        'font-semibold rounded-lg transition-all duration-300 flex items-center gap-2 font-space',
+        'font-semibold rounded-lg transition-all duration-300 flex items-center justify-center gap-2 font-space',
         'disabled:opacity-50 disabled:cursor-not-allowed',
+        fullWidth ? 'w-full' : '', // Apply w-full if fullWidth is true
         variants[variant],
         sizes[size],
         className

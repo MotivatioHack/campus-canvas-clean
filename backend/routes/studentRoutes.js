@@ -7,13 +7,14 @@ const path = require('path');
 const complaintController = require('../controllers/complaintController');
 const noticeController = require('../controllers/noticeController');
 const studentDashboard = require('../controllers/studentDashboard');
-const helpdeskController = require('../controllers/helpdeskController');
 const lostFoundController = require('../controllers/lostFoundController');
 const eventController = require('../controllers/eventController');
 const clubController = require('../controllers/clubController');
 const pollController = require('../controllers/pollController');
 const placementController = require('../controllers/placementController');
 const chatbotController = require('../controllers/chatbotController');
+const studentHelpdeskController = require('../controllers/helpdeskController'); // Unified Controller
+const { protect } = require('../middleware/authMiddleware');
 
 // --- MULTER STORAGE CONFIGURATION ---
 const storage = multer.diskStorage({
@@ -48,8 +49,10 @@ router.get('/complaints', complaintController.getUserComplaints);
 router.get('/complaints/:complaintId', complaintController.getComplaintById);
 
 // --- HELPDESK ROUTES ---
-router.post('/helpdesk/tickets', helpdeskController.createTicket);
-router.get('/helpdesk/tickets', helpdeskController.getTickets);
+// All using studentHelpdeskController for unified student context
+router.get('/helpdesk/tickets', protect, studentHelpdeskController.getTickets);
+router.post('/helpdesk/tickets', protect, studentHelpdeskController.createTicket);
+router.post('/helpdesk/tickets/:id/messages', protect, studentHelpdeskController.addMessage);
 
 // --- NOTICE & NOTIFICATION ROUTES ---
 router.get('/notices', noticeController.getNotices);
@@ -58,20 +61,16 @@ router.put('/notifications/:notificationId/read', noticeController.markNotificat
 router.put('/notifications/read-all', noticeController.markAllNotificationsRead);
 
 // --- DASHBOARD ROUTES ---
-// FIXED: Removed the router.use line that was causing the crash
 router.get('/dashboard', studentDashboard.getDashboardData);
-
 
 // --- LOST AND FOUND ROUTES ---
 router.post('/lost-found', lostFoundController.createPost);
 router.get('/lost-found', lostFoundController.getAllPosts);
 router.put('/lost-found/:id/claim', lostFoundController.claimItem);
 
-
 // --- EVENT ROUTES ---
 router.get('/events', eventController.getAllEvents);
 router.get('/events/upcoming', eventController.getUpcomingEvents);
-// Add this under your existing event routes
 router.post('/events/register', eventController.registerForEvent);
 
 // --- CLUB ROUTES ---
@@ -91,4 +90,5 @@ router.post('/placements/apply', placementController.applyForPlacement);
 // --- CHATBOT ROUTES ---
 router.get('/chatbot/history', chatbotController.getChatHistory);
 router.post('/chatbot/message', chatbotController.sendMessage);
+
 module.exports = router;

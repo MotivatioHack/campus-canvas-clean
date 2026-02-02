@@ -1,32 +1,119 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Mail, Phone, Shield, Settings, LogOut, X, Save, Key, Bell } from 'lucide-react';
+import { Mail, Phone, Shield, Settings, LogOut, X, Save, Key, Bell, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { NeonCard } from '@/components/ui/NeonCard';
 import { GlowButton } from '@/components/ui/GlowButton';
 import { GlowInput } from '@/components/ui/GlowInput';
 import { NeonAvatar } from '@/components/ui/NeonAvatar';
 import { useUI } from '@/context/admin/UIContext';
+import axios from 'axios';
+import { toast } from '@/hooks/use-toast';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 export function ProfilePage() {
   const navigate = useNavigate();
-  const { logout, addNotification, setShowSettingsModal } = useUI();
+  const { logout, addNotification } = useUI();
+  const [loading, setLoading] = useState(true);
+  const [processing, setProcessing] = useState(false);
   const [showSettingsLocalModal, setShowSettingsLocalModal] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  
   const [profileSettings, setProfileSettings] = useState({
-    name: 'System Administrator',
-    email: 'admin@campus.edu',
-    phone: '+1 234 567 8900',
+    name: '',
+    email: '',
+    phone: '',
+    department: '',
     notificationsEnabled: true,
   });
 
-  const handleSaveSettings = () => {
-    addNotification({
-      title: 'Profile Updated',
-      message: 'Your profile settings have been saved successfully',
-      type: 'success',
-    });
-    setShowSettingsLocalModal(false);
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+
+  // --- 1. FETCH LIVE ADMIN DATA ---
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        setLoading(true);
+        const token = localStorage.getItem('token');
+        const res = await axios.get(`${API_URL}/admin/profile`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.data.success) {
+          const { full_name, email, mobile_number, department } = res.data.profile;
+          setProfileSettings({
+            name: full_name || 'System Administrator',
+            email: email || '',
+            phone: mobile_number || '',
+            department: department || 'General Administration',
+            notificationsEnabled: true,
+          });
+        }
+      } catch (err) {
+        toast({ title: "Error", description: "Failed to load profile data", variant: "destructive" });
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProfile();
+  }, []);
+
+  // --- 2. UPDATE PROFILE INFORMATION ---
+  const handleSaveSettings = async () => {
+    setProcessing(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.patch(`${API_URL}/admin/profile/update`, {
+        full_name: profileSettings.name,
+        mobile_number: profileSettings.phone
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (res.data.success) {
+        addNotification({
+          title: 'Profile Updated',
+          message: 'Your changes have been synced with the database',
+          type: 'success',
+        });
+        setShowSettingsLocalModal(false);
+      }
+    } catch (err) {
+      toast({ title: "Update Failed", description: "Could not save changes to database", variant: "destructive" });
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  // --- 3. SECURE PASSWORD CHANGE ---
+  const handleUpdatePassword = async () => {
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      return toast({ title: "Validation Error", description: "Passwords do not match", variant: "destructive" });
+    }
+    setProcessing(true);
+    try {
+      const token = localStorage.getItem('token');
+      await axios.put(`${API_URL}/admin/profile/password`, {
+        currentPassword: passwordData.currentPassword,
+        newPassword: passwordData.newPassword
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast({ title: "Success", description: "Password updated successfully" });
+      setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    } catch (err: any) {
+      toast({ 
+        title: "Error", 
+        description: err.response?.data?.message || "Password update failed", 
+        variant: "destructive" 
+      });
+    } finally {
+      setProcessing(false);
+    }
   };
 
   const handleLogout = () => {
@@ -40,20 +127,26 @@ export function ProfilePage() {
     navigate('/');
   };
 
+  if (loading) return (
+    <div className="flex h-64 items-center justify-center">
+      <Loader2 className="animate-spin text-neon-cyan w-10 h-10" />
+    </div>
+  );
+
   return (
-    <div className="space-y-6 max-w-2xl mx-auto">
+    <div className="space-y-6 max-w-2xl mx-auto text-left">
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="text-3xl font-bold font-orbitron gradient-text-aurora">Admin Profile</h1>
+        <h1 className="text-3xl font-bold font-orbitron gradient-text-aurora text-center">Admin Profile</h1>
       </motion.div>
 
       <NeonCard glowColor="purple">
         <div className="flex flex-col items-center text-center">
-          <NeonAvatar initials="AD" glowColor="purple" size="lg" />
+          <NeonAvatar initials={profileSettings.name.substring(0, 2).toUpperCase()} glowColor="purple" size="lg" />
           <h2 className="text-2xl font-bold text-foreground mt-4">{profileSettings.name}</h2>
-          <p className="text-neon-cyan">Super Admin Access</p>
+          <p className="text-neon-cyan">{profileSettings.department}</p>
           <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
             <Shield className="w-4 h-4 text-neon-green" />
-            <span>All Permissions Granted</span>
+            <span>Super Admin Access</span>
           </div>
         </div>
       </NeonCard>
@@ -67,7 +160,7 @@ export function ProfilePage() {
           </div>
           <div className="flex items-center gap-3">
             <Phone className="w-5 h-5 text-neon-purple" />
-            <span className="text-foreground">{profileSettings.phone}</span>
+            <span className="text-foreground">{profileSettings.phone || 'Not Provided'}</span>
           </div>
         </div>
       </NeonCard>
@@ -105,9 +198,9 @@ export function ProfilePage() {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-md glass rounded-2xl neon-border overflow-hidden"
+              className="w-full max-w-md glass rounded-2xl neon-border overflow-hidden max-h-[90vh] overflow-y-auto"
             >
-              <div className="p-6 border-b border-border/50 flex items-center justify-between">
+              <div className="p-6 border-b border-border/50 flex items-center justify-between sticky top-0 bg-background/80 backdrop-blur-md z-10">
                 <h2 className="text-xl font-bold font-orbitron text-foreground">Profile Settings</h2>
                 <button onClick={() => setShowSettingsLocalModal(false)} className="p-2 hover:bg-muted/50 rounded-lg">
                   <X className="w-5 h-5 text-muted-foreground" />
@@ -116,20 +209,17 @@ export function ProfilePage() {
               <div className="p-6 space-y-4">
                 <GlowInput 
                   label="Full Name" 
-                  placeholder="Your name"
                   value={profileSettings.name}
                   onChange={(e) => setProfileSettings({...profileSettings, name: e.target.value})}
                 />
                 <GlowInput 
-                  label="Email" 
+                  label="Email (Read-only)" 
                   type="email"
-                  placeholder="admin@campus.edu"
                   value={profileSettings.email}
-                  onChange={(e) => setProfileSettings({...profileSettings, email: e.target.value})}
+                  disabled
                 />
                 <GlowInput 
                   label="Phone" 
-                  placeholder="+1 234 567 8900"
                   value={profileSettings.phone}
                   onChange={(e) => setProfileSettings({...profileSettings, phone: e.target.value})}
                 />
@@ -137,7 +227,7 @@ export function ProfilePage() {
                 <label className="flex items-center justify-between p-4 rounded-lg bg-muted/30 border border-border/50">
                   <div className="flex items-center gap-3">
                     <Bell className="w-5 h-5 text-neon-cyan" />
-                    <span className="font-medium text-foreground">Email Notifications</span>
+                    <span className="font-medium text-foreground text-sm">Email Notifications</span>
                   </div>
                   <button
                     onClick={() => setProfileSettings({...profileSettings, notificationsEnabled: !profileSettings.notificationsEnabled})}
@@ -151,13 +241,31 @@ export function ProfilePage() {
                   </button>
                 </label>
 
-                <div className="p-4 rounded-lg bg-muted/30 border border-border/50">
-                  <div className="flex items-center gap-3 mb-2">
+                <div className="p-4 rounded-lg bg-muted/30 border border-border/50 space-y-3">
+                  <div className="flex items-center gap-3">
                     <Key className="w-5 h-5 text-neon-purple" />
-                    <span className="font-medium text-foreground">Change Password</span>
+                    <span className="font-medium text-foreground text-sm">Security Update</span>
                   </div>
-                  <GlowButton variant="purple" size="sm" className="w-full">
-                    Update Password
+                  <GlowInput 
+                    type="password"
+                    placeholder="Current Password"
+                    value={passwordData.currentPassword}
+                    onChange={(e) => setPasswordData({...passwordData, currentPassword: e.target.value})}
+                  />
+                  <GlowInput 
+                    type="password"
+                    placeholder="New Password"
+                    value={passwordData.newPassword}
+                    onChange={(e) => setPasswordData({...passwordData, newPassword: e.target.value})}
+                  />
+                  <GlowInput 
+                    type="password"
+                    placeholder="Confirm New Password"
+                    value={passwordData.confirmPassword}
+                    onChange={(e) => setPasswordData({...passwordData, confirmPassword: e.target.value})}
+                  />
+                  <GlowButton variant="purple" size="sm" className="w-full" onClick={handleUpdatePassword} disabled={processing}>
+                    {processing ? "Updating..." : "Update Password"}
                   </GlowButton>
                 </div>
 
@@ -167,8 +275,9 @@ export function ProfilePage() {
                     className="flex-1"
                     icon={<Save className="w-4 h-4" />}
                     onClick={handleSaveSettings}
+                    disabled={processing}
                   >
-                    Save Changes
+                    {processing ? "Saving..." : "Save Changes"}
                   </GlowButton>
                   <GlowButton variant="purple" onClick={() => setShowSettingsLocalModal(false)}>
                     Cancel

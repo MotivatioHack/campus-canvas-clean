@@ -9,7 +9,7 @@ import TopNavbar from "@/components/layout/student/TopNavbar";
 import { toast } from "@/hooks/use-toast";
 import { useTheme } from "@/context/ThemeContext";
 import axios from "axios"; // Ensure axios is installed
-
+import api from '@/modules/student/services/api';
 interface Message {
   sender: "student" | "faculty";
   message: string;
@@ -92,10 +92,12 @@ const Helpdesk = () => {
   };
 
   // --- STEP 3: SUBMIT REPLY TO BACKEND ---
+// --- SUBMIT REPLY TO BACKEND ---
   const handleReply = async (ticketId: string, db_id: number) => {
     if (!newMessage.trim()) return;
     try {
       const token = localStorage.getItem("token");
+      // Use the internal MySQL db_id to target the correct record
       const response = await axios.post(`http://localhost:5000/api/student/helpdesk/tickets/${db_id}/messages`, {
         message: newMessage
       }, {
@@ -104,14 +106,14 @@ const Helpdesk = () => {
 
       if (response.data.success) {
         setNewMessage("");
-        fetchTickets(); // Refresh to show new message
-        toast({ title: "Sent", description: "Reply added to ticket." });
+        fetchTickets(); // Refresh triggers the chronological message fetch
+        toast({ title: "Sent", description: "Your message has been added to the ticket." });
       }
     } catch (error) {
+      console.error("Reply error:", error);
       toast({ title: "Error", description: "Failed to send message", variant: "destructive" });
     }
   };
-
   const getCardClasses = () => {
     switch (theme) {
       case "dark": return "bg-[#1a1a2e] border-[#3d3d5c]";

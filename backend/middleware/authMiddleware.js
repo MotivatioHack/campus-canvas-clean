@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 
 // --- 1. General Verification (Checking if logged in) ---
-const verifyToken = (req, res, next) => {
+const protect = (req, res, next) => {
     try {
         const authHeader = req.headers['authorization'];
         const token = authHeader && authHeader.split(' ')[1];
@@ -21,17 +21,15 @@ const verifyToken = (req, res, next) => {
 // --- 2. Role Specific Verification ---
 const verifyRole = (requiredRole) => {
     return (req, res, next) => {
-        // We use verifyToken logic inside or just call next if verifyToken was already used
-        verifyToken(req, res, () => {
-            if (req.user.role !== requiredRole.toLowerCase()) {
-                return res.status(403).json({ 
-                    success: false, 
-                    message: `Access denied. You are a ${req.user.role}.` 
-                });
-            }
-            next();
-        });
+        // req.user is populated by the 'protect' middleware called before this
+        if (!req.user || req.user.role !== requiredRole.toLowerCase()) {
+            return res.status(403).json({ 
+                success: false, 
+                message: `Access denied. Authorized role: ${requiredRole}` 
+            });
+        }
+        next();
     };
 };
 
-module.exports = { verifyToken, verifyRole };
+module.exports = { protect, verifyRole };

@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   Briefcase, Building2, Calendar, MapPin, DollarSign, 
   Users, CheckCircle, Clock, Loader2, ChevronDown, ChevronUp, Award,
-  FileText // Added missing import
+  FileText 
 } from "lucide-react";
 import MainLayout from "@/components/layout/student/MainLayout";
 import TopNavbar from "@/components/layout/student/TopNavbar";
@@ -46,6 +46,7 @@ const Placements = () => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [isApplying, setIsApplying] = useState<string | null>(null);
 
+  // --- 1. FETCH REAL DATABASE DATA ---
   const fetchData = async () => {
     try {
       setLoading(true);
@@ -54,14 +55,14 @@ const Placements = () => {
         placementAPI.getStats()
       ]);
 
-      // Accessing .data property from the backend response structure
+      // Safety check for backend response structure
       const placementsArray = placementsRes?.data || (Array.isArray(placementsRes) ? placementsRes : []);
       
       setPlacements(placementsArray);
       setStats(statsData || { totalDrives: 0, applied: 0, ongoing: 0, offers: 0 });
     } catch (error: any) {
       console.error("Fetch Error:", error);
-      toast({ title: "Error", description: "Failed to load placement data.", variant: "destructive" });
+      toast({ title: "Sync Error", description: "Could not fetch latest placement drives.", variant: "destructive" });
       setPlacements([]);
     } finally {
       setLoading(false);
@@ -72,12 +73,13 @@ const Placements = () => {
     fetchData(); 
   }, []);
 
+  // --- 2. HANDLE APPLICATION PERSISTENCE ---
   const handleApply = async (placementId: string, companyName: string) => {
     try {
       setIsApplying(placementId);
       await placementAPI.apply(placementId);
       toast({ title: "Applied!", description: `Successfully applied to ${companyName}.` });
-      fetchData(); 
+      fetchData(); // Refresh to update "applied" status instantly
     } catch (error: any) {
       toast({ title: "Failed", description: "Could not submit application.", variant: "destructive" });
     } finally { 
@@ -96,12 +98,12 @@ const Placements = () => {
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20 opacity-60">
           <Loader2 className="w-10 h-10 animate-spin text-[#4f6fdc] mb-4" />
-          <p>Loading placement drives...</p>
+          <p>Connecting to placement database...</p>
         </div>
       ) : (
         <>
-          {/* Stats Section */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          {/* Stats Section - Dynamic Values */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 text-left">
             {[
               { title: "Total Drives", value: stats.totalDrives, icon: Building2, color: "#4f6fdc" },
               { title: "Applied", value: stats.applied, icon: CheckCircle, color: "#49b675" },
@@ -113,7 +115,7 @@ const Placements = () => {
                   <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${stat.color}15` }}>
                     <stat.icon className="w-5 h-5" style={{ color: stat.color }} />
                   </div>
-                  <div>
+                  <div className="text-left">
                     <p className="text-sm text-gray-500">{stat.title}</p>
                     <p className="text-xl font-bold dark:text-white">{stat.value}</p>
                   </div>
@@ -139,7 +141,7 @@ const Placements = () => {
             ))}
           </div>
 
-          {/* Drives List */}
+          {/* Drives List - Dynamic Mapping */}
           <div className="space-y-4">
             {filteredPlacements.length > 0 ? (
               filteredPlacements.map((placement) => (
@@ -151,7 +153,7 @@ const Placements = () => {
                         <div className="w-14 h-14 bg-gray-100 dark:bg-white/10 rounded-xl flex items-center justify-center">
                           <Building2 className="text-gray-400" />
                         </div>
-                        <div>
+                        <div className="text-left">
                           <div className="flex items-center gap-2 mb-1">
                             <h3 className="text-lg font-bold dark:text-white">{placement.company}</h3>
                             <span className="text-[10px] px-2 py-0.5 rounded-full uppercase font-bold" style={{ backgroundColor: `${statusColors[placement.status]}15`, color: statusColors[placement.status] }}>
@@ -199,7 +201,7 @@ const Placements = () => {
                           initial={{ height: 0, opacity: 0 }} 
                           animate={{ height: "auto", opacity: 1 }} 
                           exit={{ height: 0, opacity: 0 }}
-                          className="mt-6 pt-6 border-t dark:border-white/10 grid grid-cols-1 lg:grid-cols-2 gap-8 overflow-hidden"
+                          className="mt-6 pt-6 border-t dark:border-white/10 grid grid-cols-1 lg:grid-cols-2 gap-8 overflow-hidden text-left"
                         >
                           <div className="space-y-4">
                             <div>
@@ -209,9 +211,9 @@ const Placements = () => {
                               <p className="text-sm text-gray-500 leading-relaxed">{placement.description}</p>
                             </div>
                             <div>
-                              <h4 className="font-bold mb-2 dark:text-white">Requirements</h4>
+                              <h4 className="font-bold mb-2 dark:text-white text-left">Requirements</h4>
                               <div className="flex flex-wrap gap-2">
-                                {placement.requirements.map((req, i) => (
+                                {placement.requirements && placement.requirements.map((req, i) => (
                                   <span key={i} className="text-[11px] bg-gray-100 dark:bg-white/5 px-2 py-1 rounded text-gray-500 border dark:border-white/5">
                                     {req}
                                   </span>
@@ -220,10 +222,10 @@ const Placements = () => {
                             </div>
                           </div>
                           <div>
-                            <h4 className="font-bold mb-4 dark:text-white">Drive Timeline</h4>
+                            <h4 className="font-bold mb-4 dark:text-white text-left">Drive Timeline</h4>
                             <div className="relative pl-6 space-y-6">
                               <div className="absolute left-2.5 top-2 bottom-2 w-0.5 bg-gray-100 dark:bg-white/10" />
-                              {placement.timeline.map((item, idx) => (
+                              {placement.timeline && placement.timeline.map((item, idx) => (
                                 <div key={idx} className="relative flex items-center gap-4">
                                   <div className={`w-5 h-5 rounded-full flex items-center justify-center z-10 ${
                                     item.status === "completed" ? "bg-green-500" : item.status === "current" ? "bg-orange-500" : "bg-gray-200 dark:bg-white/20"
@@ -231,7 +233,7 @@ const Placements = () => {
                                     {item.status === "completed" && <CheckCircle className="w-3 h-3 text-white" />}
                                     {item.status === "current" && <Clock className="w-3 h-3 text-white animate-pulse" />}
                                   </div>
-                                  <div>
+                                  <div className="text-left">
                                     <p className="text-sm font-bold dark:text-white">{item.title}</p>
                                     <p className="text-[10px] text-gray-400">{new Date(item.date).toDateString()}</p>
                                   </div>
